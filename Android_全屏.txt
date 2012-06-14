@@ -1,0 +1,14 @@
+    <supports-screens android:largeScreens="true" 
+android:normalScreens="true" 
+
+android:smallScreens="true" 
+
+android:anyDensity="true" />  
+
+ActivityGroup中的一个子Activity，如果这个Activity的布局总元素是LinearLayout，那么设置fill_parent，但是背景色不能充满全屏.
+  必需让它的一个子布局再设fill_parent,这个子元素也不能是LinearLayout;
+  或者改为RelativeLayout来当总元素.
+
+    
+    
+    

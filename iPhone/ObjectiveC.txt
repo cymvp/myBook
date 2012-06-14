@@ -1,0 +1,18 @@
+@autoreleasepool{}系统提供的自动释放池的快捷写法.
+
+成员变量也分public, protected, private; 默认是protected的.
+@interface Car : NSObject{
+  @public 
+    Engine *engine；
+}
+@end
+
+@interface{}中相当于头文件，但是和C++不同的是，类必须同样有@implementation Car @end; 否则不能实例化.
+当不需要实例化时，可以只看到@interface即可;
+当需要实例化时，被实例化的类必须要有@implementation;
+当不需要实例化，且不需要引用该类对象成员变量及方法时，可以不用看到@interface,只需像C++的class XXX；即可.
+
+和Java一样，实例化必须通过new,没有C++所谓的栈对象.
+
+".": 当一个成员变量有访问器时，才可以通过.来访问.
+"->":可以使用"->"来访问成员变量.    

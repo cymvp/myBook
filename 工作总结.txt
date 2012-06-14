@@ -1,0 +1,23 @@
+Question:
+1 Log.d会在Release版本打印出来，如何解决?
+2 流程中如果生成缓存文件，这时候不正常流程导致程序退出(如Activity被回收)，那么缓存文件怎么办?
+3 有一些通用的操作会放到Activity的基类如KXActitivy中, 比如： 进照片界面上传照片; 但是有时候需要区分是哪个Activity来调用的，这时候怎么处理?是否为每一个Activity的子类建一个标记?
+
+  class A{
+    protected static  int mMark = 1;
+    
+}
+
+ class B extends A{
+    static{
+        mMark = 2;
+    }
+    
+4 怎样调试system_process进程?
+
+5 双卡双带选择发送短信    
+
+6 COSMO的绘制方式: 单独线程? setText()中没有设置invalidate()?
+
+
+

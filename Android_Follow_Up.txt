@@ -1,0 +1,52 @@
+1 Dimension:
+  (1) px:pixel, 屏幕中实际的一个dot.根据屏幕的分辨率(pixel/inch)不同,px在长度上的大小是不同的. 这种单位不推荐使用，因为各个设备的分辨率可能是不同的,
+同一个数值的px，在高分辨率下可能会显得很短.  
+  
+  (2) dp:Density-independent Pixels,与屏幕dot密度无关的一种单位.dp在长度上的大小是确定的，是1/160 inch.
+      由于这种单位与inch直接挂钩，与设备的分辨率无关，所以可以在相同或者相似screen大小的设备上，定制出相同实际大小的布局，而不需要管分辨率.
+      
+  (3) sp: Scale-independent Pixels 一种既与密度无关，又与scale无关的单位.与dp相似，而且它可以根据用户font size的参数设置自行进行比例调整.
+  
+2 快速打开layout xml文件: Ctrl + Shift + R: 然后输入layout的名称或者id的名称.
+
+3 View继承关系: Object->View->TextView
+                            ->ViewGroup->各种Layout，AdapterView<T extends Adapter>
+  
+  Adapter: AdapterView和data的桥梁,是接口. Adapter还负责为每一个item制造出一个View.
+  
+  Adapter的继承关系: Adapter:Interface-> ListAdapter: Interface
+   																				    ->BaseAdapter: abstract class
+   																				          ->ArrayAdapter<T>:实体类
+   																				    
+
+  
+ ListAdapter: 继承了Adapter接口，并额外提供了两个抽象方法.
+      
+ BaseAdapter: 抽象类，不能被实例化.实现了ListAdapter的方法，及部分Adapter的方法，有6个getXX的方法没有实现.
+  
+ ArrayAdapter<T>: 实现了Adapter,ListAdapter的全部方法.
+ 
+ 
+ 4 Adapter更新了数据后，最好调用notifyDataSetChanged()让Adapter去做刷新.
+ 
+ 文档中位于Public Methods的API都是自己实现或者覆盖的，位于Inherited Methods中：extends的是直接用父类的, interface的是哪个接口中声明的。
+ 
+ 5 Activity的onResume状态和onStart()状态:
+ 
+     onResume状态: <---onStart :第一次创建Activity时，或者从后台恢复回来.
+                   <---onPause:当Activity上的其他Activity1消失时(Activity始终可见).
+                   
+     onStart状态: <---onCreate: 第一次创建Activity时.
+                  <---onRestart:从后台恢复回来.    
+                  
+     onResume状态是用户可操作的第一个状态.                      
+                  
+6 布局中的几个概念:
+   layout_weight: 该View占当前所在布局的比例.
+   
+   layout_gratity:该View相对于当前所在布局的位置.
+   
+   layout_margin: View内Content对于View的边距的Offset，相当于内边距.
+   
+   padding:View相对于所在当前布局的Offset，相当于外边距.                  
+                      

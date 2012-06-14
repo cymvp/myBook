@@ -1,0 +1,61 @@
+抽象类:
+  可以没有抽象方法;
+  如果有抽象方法，那么一定需要用abstract类修饰类.
+  抽象方法只能用public, protected来修饰，或者不修饰.不能使用static, final.
+
+Interface:
+  接口中的域必须是public static final的；public static final可以不写.
+  接口的方法必须是public的, public可以不写. 接口的方法在实现时，必须要加public.
+  
+  接口命名的冲突问题:
+  interface I1{
+    void f();
+  }
+  
+  interface I3{
+      int f();
+  }
+  
+  class C {
+    public int f(){
+        return 1;
+    }
+ }
+  
+  1 interface I4 extends I1, I3{}出错： 把I4看做是C++的一个类，那么I4会有void f();和 int f()的声明;由于虚函数不能靠返回值判断，所以不行.
+  2 class C5 extends C implements I1{}出错: 由于C5继承了C的int f(),所以不能再有void f(){}, 因为Java是没有C++的方法隐藏机制的，这样就无法实现I1的方法.
+  
+  类中可以嵌套接口，这时接口可以声明为protected，private，这点同嵌套类一致.
+     private的嵌套接口可以被类的内部类以public，private的方式实现.
+     接口中的嵌套接口必须是public的.
+     某个类实现接口时，不需要实现该接口内部的嵌套接口.
+     
+     
+内部类:
+  内部类的引用:
+    从外部类的非静态方法:直接引用.
+    从外部类的非静态方法外部：outclass.innerclass.
+  .this: 在内部类中引用外部类对象.
+  .new:在其它类中创建内部类对象.  
+  
+   内部类的一个好处: 设类A有一个方法: void func(); 类B继承类A，同时类B实现接口C: interface C{void func()；}如果类B想为C实现func()，那么就可以使用内部类来implements C.
+  
+  内部类可以被在外部类外继承.
+  
+  类A有内部类C, 类B extends A，如果类B同样定义了内部类C,那么B.C不会影响A.C，两者共存.B也可以定义C1 extends A.C.
+  
+  
+  内部类的用处:一个比较重要的用处就是实现C++的多重继承.  
+  
+匿名内部类:
+  可以为构造器传递参数,等于是调用父类的构造器.
+  可以在匿名内部类中定义域.
+  匿名内部类没有自己的构造器，因为没有名字.可以通过初始化的方式初始化变量.
+  匿名内部类访问外部的局部变量必须是final的，除了传给父类构造器的局部变量.
+  匿名内部类只能或者扩展类，或者实现一个接口，不能两个都实现.
+   
+  普通内部类不能有static域和方法.
+  
+  接口中定义的类自动为public static的.
+  
+ 

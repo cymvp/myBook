@@ -1,0 +1,44 @@
+使用AddView动态加入的view都不会看layout中的布局属性，而是会default生成一个属性.
+
+ViewGroup会生成：
+   protected LayoutParams generateDefaultLayoutParams() {
+        return new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+    }
+    
+FrameLayout会生成: 
+
+    protected LayoutParams generateDefaultLayoutParams() {
+        return new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+    }
+    
+所以如果动态加入view的话，应该也同时设置layout的属性.        
+    
+    
+<intent-filter />:
+  可以被包含在<activity>, <service>, <recevier>.
+  
+  必需包含一个<action>
+  
+  可选的<category>, <data>.
+  
+  每个隐式的intent都等价于包含一个android.intent.category.DEFAULT的category,所以每个activity都应该声明一个android.intent.category.DEFAULT.
+    例外:1 显式的itent不包含. 
+         2 声明为android.intent.action.MAIN" 和 "android.intent.category.LAUNCHER"的activity可以不写android.intent.category.DEFAULT 
+         
+  action的匹配: 只要intent里匹配上一个filter的action，就可成功.
+  category的匹配: intent里的category，filter里要全都有。也就是同action, filter只能比intent多，不能比filter少.
+
+  data的匹配:
+    data包含两部分:
+       uri: android:scheme, android:host, android:port, android:path. host和port统称authority
+       type: android:mimetype.
+       
+    在filter出现的uri部分：对于每一个子部分，在intent中有与之的匹配.也就是说, filter里规定的部分，才会去筛选的，其他没有的放行(与category,action, mimetype相反).
+    
+    在intent出现的mimetype部分: filter中都要有，才能与之匹配. 这个和category，data一样，filter要比intent多.
+
+    当intent有mimetype和uri时，如果uri能匹配上，那么filter可以没有uri. 但是如果filter有uri，比如scheme，那么会失败.
+       
+    
+    
+    

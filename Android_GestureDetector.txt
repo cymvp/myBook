@@ -1,0 +1,13 @@
+View.OnTouchListener --> onTouch(View v, MotionEvent event);
+  这个接口的方法onTouch会在View自己的onTouch之前调用.当这个方法返回true,Android不会再调用自己的onTouch().
+  
+GestureDetector是一个类,它的onTouchEvent()方法做了很多处理，比如识别手势，比如计算距上个MotionEvent之后又做了什么事情，并返回坐标等，这样用户就不需要自己去计算.
+  我认为这个类还有一个好处是，  它可以在任何地方调用，如dispatchTouchEvent(), View.onTouch(), View.OnTouchListener的onTouch()等等.
+  
+  流程: 1 GestureDetector gDetector = new GestureDetector(context, 传GestureDetector.OnGestureListener的实例)；
+        2 在希望处理的方法中调用: gDetector.onTouchEvent(event);
+        3 onTouchEvent()中会计算手势，坐标，然后根据它的计算结果调用相应接口的方法,如：onFling(), onDown(), onScroll()等等.
+          这些接口方法在GestureDetector.OnGestureListener的实例中实现.
+          
+  还有一个接口：GestureDetector.OnDoubleTapListener，这个接口不需要传入gDetector,  GestureDetector内部会判断传入的 GestureDetector.OnGestureListener的实例是否同时实现了OnDoubleTapListener,如果实现了的话，会调用相应接口方法.
+        

@@ -1,0 +1,9 @@
+Android里的编码方式是Unicode的,或者(UTF-16,反正不是UTF-8)的.
+URLEncoder.encode(str)这个方法会转成UTF8的(但是网上说这个方法会转成本地使用的编码).
+
+GBK和GB2312因为不是遵循Unicode定制的，所以和Unicode的编码完全不同.
+
+Utf8等可以看做是Unicode的变形.
+
+UTF8的优势: 没有字节序; 为AcsII提供一个字节，提高利用率;没有FF和FE.
+

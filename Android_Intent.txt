@@ -1,0 +1,108 @@
+getPackageName():返回Activity类的Package名字:package com.example.android.
+
+Action:一个字符串, “包名 + Class.变量”. Android会通过Action名去查AndroidManifest.xml里的Action项.
+
+Action决定了data段和extras段.
+
+其实Action的名字可以任意取，不需要加包名.
+要指定: <category android:name="android.intent.category.DEFAULT" />
+
+<intent-filter>:intent过滤器,如果一个Activity没有过滤器，那么只能接收显式指定Activity类的Intent.
+每一个Intent过滤器是一个IntentFilter对象. 一个Activity可以有多个Intent过滤器.
+
+一个<intent-filter>必须至少有一个Action,否则等于是无效的<intent-filter>.
+
+Intent中的Category必需是<intent-filter>的Category的子集，否则匹配失败.
+
+<intent-filter>过滤器必需要指定<category android:name="android.intent.category.DEFAULT" />，否则会匹配失败.
+
+android.intent.action.MAIN" 和 "android.intent.category.LAUNCHER"的过滤器，可以不加<category android:name="android.intent.category.DEFAULT" />。
+
+
+<data>:
+
+每个<data>元素指定一个URI和数据类型（MIME类型）。
+
+1 URI有四个属性scheme、host、port、path对应于URI的每个部分： 
+  scheme://host:port/path
+  
+  host:prot合称authority.
+ 
+  这四个属性都是可选的,其中port附属于host.
+ 
+  比较URI时，Inteng的URI必须是过滤器的URI的一个超集，否则匹配失败.
+  
+  过滤器中的path可以使用通配符.
+  
+2 数据类型:
+  <data>的android:mimeType属性是定MIME类型.。Intent对象和过滤器都可以用"*"通配符匹配子类型字段，例如"text/*"，"audio/*"表示任何子类型。
+  
+  数据匹配时，必需要相同才行，与Action相似.
+  
+3  数据检测既要检测URI，也要检测数据类型。
+  
+  默认Activity支持content:和file:这两个scheme.
+  
+  当Intent有URI时，但是过滤器没有URI，那么只有content:或file: 的URI，才能匹配通过.
+  
+  当Intent只有URI, 那么过滤器必需得有URI，且过滤器的是Intent的子集.
+  
+  当Intent和过滤器都没有URI和数据类型,那么可以匹配通过.
+  
+
+
+ACTION_GET_CONTENT的用法是得到某一类的mimie类型的数:
+intentGallery.setType("image/*");
+intentGallery.setAction(Intent.ACTION_GET_CONTENT);
+
+android.intent.action.PICK的用法是得到某个uri对应的数据，android会根据这个uri去调用ContentProvider.
+Uri localUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
+intentGallery = new Intent("android.intent.action.PICK", localUri);
+
+
+
+Intent的packageName是Manifest.xml里的package，也就是application定义的package. className必须等于activity的完整包名+类名, 且Manifest.xml里的activity的android:name=".coolbutton.ButtonTestActivity" + package，也要等于className.
+
+不同进程间也可以通过设置类名的方式设置intent,只要知道目标activity的package名和类名:intent.setClassName("com.TestAndroid", "com.TestAndroid.TestTaskActivity");
+
+Intent.ACTION_MAIN和Intent.CATEGORY_LAUNCHER是需要一起设置的，在LauncherModel的loadAllAppsByBatch():
+
+  final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+  mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+  apps = packageManager.queryIntentActivities(mainIntent, 0);
+  也就是会同时使用这两个filter去查看每个App中符合的activity.这两个不能分割.所以如果activity加了额外的filter如<data android:scheme="http"/>，也会被过滤掉.
+  (这个观点有待权威验证).
+  
+  
+  
+ LauncherModel收到ACTION_EXTERNAL_APPLICATIONS_AVAILABLE的广播:
+    ->startLoader()
+      ->loadAndBindAllApps()
+        ->loadAllAppsByBatch()
+          ->准备Intent.ACTION_MAIN和Intent.CATEGORY_LAUNCHER.
+          ->queryIntentActivities();
+            通过Intent的ComponentName获得当前系统内所有吻合的activity；这也就是activity必须写到manifest.xml中的原因，为了向系统注册.
+            判断intent是否有mpakage: 有的意思是说intent希望在指定pakage中查找activity；不设的意思就是希望在所有application中查找符合filter的activity(component).
+            这里是launch，所以没有mpakage,所以调用IntentResolver.queryIntent();这个函数就是在按规则筛选activity.
+            因为只有ACTION_MAIN,和CATEGORY_LAUNCHER：
+                当有action的时候：
+                   buildResolveList(intent, debug, defaultOnly, resolvedType, scheme, firstTypeCut, finalList);
+                    ->match = filter.match(intent.getAction(), resolvedType, scheme, intent.getData(), categories, TAG);
+                        filter中必须要有action;
+                        mActionToFilter为按action分类的map表; 只要intent中有一个action和actegory与mActionToFilter定义的某个filter中的某个action和category都能对上，则被选中.
+                        ->IntentFilter.matchCategories(categories);
+                        ->matchAction(action);
+          ->mAllAppsList.add(new ApplicationInfo(apps.get(i), mIconCache));
+          ->callbacks.bindAllApplications(added);
+            allapps2D绑定所有的ApplicationInfo,然后就是显示了. 
+            
+ 从上分析可知，launcher在筛选activity的时候，只会看 ACTION_MAIN， CATEGORY_LAUNCHER，而不会看CATEGORY_DEFAULT(在PMS中为MATCH_DEFAULT_ONLY)，所以如果activity没有设置CATEGORY_DEFAULT，也不会被过滤掉.
+ 
+ 而通过activity启动另一个activity的时候，流程如下:
+  startActivityMayWait();
+     ->ResolveInfo rInfo = ActivityThread.getPackageManager().resolveIntent(intent, resolvedType, PackageManager.MATCH_DEFAULT_ONLY | STOCK_PM_FLAGS); 
+        ->List<ResolveInfo> query = queryIntentActivities(intent, resolvedType, flags);
+        ->return chooseBestActivity(intent, resolvedType, flags, query); 
+          ->findPreferredActivity()
+            -> mSettings.mPreferredActivities.queryIntent(intent, resolvedType,(flags&PackageManager.MATCH_DEFAULT_ONLY) != 0);
+              如果设置了MATCH_DEFAULT_ONLY，那么会过滤掉没有设置该条件的activity.所以只要没设置这个flag，那么就不会出现在选择列表中. 选择列表也是一个activity，是findPreferredActivity来返回的. 

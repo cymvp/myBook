@@ -1,0 +1,5 @@
+ContentObserver:功能类似CallBack.
+
+当某个使用这个类对象的对象，有一些改变的时候，会调用到ContentObserver的onChange(),这个方法ContentObserver没有实际内容.
+
+应该从ContentObserver继承一个类，然后Override onChange()方法. ContentObserver的构造函数有一个Handler的参数,可以在onChange()中使用这个Handler来sendmessage.

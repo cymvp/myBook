@@ -1,0 +1,69 @@
+LinearLayout:
+  设置为fill_parent的item会填充整个父类区域，如果该item是第一个item那么后面的item将不会显示.
+  
+
+  没有layout_weith的item具有先计算的优先级:如果有item有layout_weight:那么将会先将没有layout_weight的item的区域减去，也就是说先为没有layout_weight的item计算区域.如果第一个没有layout_weight的item设置为fill_parent,那么其他的item都不会显示.
+  
+  android:orientation="vertical" 设置水平排布还是垂直排布.
+  
+  所有的item必需设置填充方式:android:layout_width和android:layout_height.
+     有3中取值:
+     (1) 具体的像素；
+     (2) wrap_content；
+     (3) fill_parent;
+     
+  可以通过设置layout_weight来让这个item填充满其余区域,如:一个textview和button水平排布，给textview设置layout_weight=1,那么button会先留出地方，然后textview填充满其余地方.
+  
+  对于有layout_weight的item,layout_weight的优先级比fill_parent要高.
+  
+RelativeLayout:
+
+  如果不指定item的位置，那么默认item都是在父布局的最左上角开始画，这样如果有两个item不指定，那么它们将重合在左上角.
+  
+  控件的id必需先定义后使用,否则出错.
+  
+  
+FrameLayout：
+  默认每个子控件都是相对FrameLayout的左上角开始.可以设置android:paddingLeft来调整子控件的位置.
+  
+布局文件只能使用a-z0-9_.”.
+  
+  
+  ScrollView里只能放一个元素.
+  
+  当ScrollView里的元素想填满ScrollView时，使用"fill_parent"是不管用的，必需为ScrollView设置：android:fillViewport="true"。
+  
+  我猜 当ScrollView没有fillVeewport=“true”时, 里面的元素(比如LinearLayout)会按照wrap_content来计算(不论它是否设了"fill_parent"),而如果LinearLayout的元素设置了fill_parent,那么也是不管用的，因为LinearLayout依赖里面的元素，而里面的元素又依赖LinearLayout,这样自相矛盾.所以里面元素设置了fill_parent，也会当做wrap_content来计算.
+  
+  
+ ListView的属性:  android:cacheColorHint="#00000000" 当ListView自定义了背景色，且滚动时，会出现黑背景，这是因为Android重绘背景时，还是用的老颜色.
+ 
+ <Include />的用法:
+   1 只支持几种简单的属性,如果要想支持更多的属性(如当前父类的layout_XXX),那么:
+     方法(1)：Override android:layout_height和android:layout_width属性.这样其他的属性设置才能有效.
+     方法(2): 定义一个FrameLayout在外，然后在FrameLayout中写<include />，在FrameLayout中设置其他属性.
+     
+ 对Layout属性的理解:
+   LayoutParams的继承关系:
+   LayoutParams: android:layout_height, android:layout_width. 
+     ->MarginLayoutParams:android:layout_marginBottom等4个Margin属性.
+         ->FrameLayoutParams: android:layout_above,android:layout_alignParentRight等Relative属性.
+         ->inearLayoutParams:  android:layout_gravity,android:layout_weight. 
+         ->RelativeLayoutParams:android:layout_gravity.
+   
+   每个LayoutParams都是对应Layout的内部类，它们的作用就是为对应的Layout的子控件提供相应布局的属性参数.
+   
+   只要是android:layout_XXX开头的属性，都是属于某个LayoutParams的，都是为某种Layout的子控件使用用以调整子控件的属性的.
+   
+   一个子控件比如TextView, ImageView，有自己的属性，也有layout_xxx的属性.
+   
+   Layout的属性也是自己的属性+父Layout的layout_xxx属性.
+   
+         
+   ImageView和Layout等控件, BackGround会包含到该控件的计算大小，如果控件设为50dp,那么ImageView就会扩展到50dp，然后再算padding.
+   
+   如果是有背景，有content的ImageView，且想跟随content来显示Imageview，那么应该使用wrap_content，且背景图一定要比图片小，用9patch图.
+    
+FrameLayout的Bug：
+   如果FrameLayout里的子View想要设置layout_margin,那么就必须先设置一个layout_gravity.
+   据说3.0之后没有这个bug了.     

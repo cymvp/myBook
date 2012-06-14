@@ -1,0 +1,103 @@
+首选项框架是指: Android提供了一套快速建立设置功能的框架，称为首选项框架.这套框架包含了UI, 数据存储和读取.
+
+UI: 
+  1 在xml中定义：xml文件存放在res/xml/文件名.xml:
+  
+    <PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+	 <PreferenceCategory android:title="@string/setting_category_widget">
+		<CheckBoxPreference 
+			android:title="@string/setting_check_widget_refresh_interval" 
+			android:key="check_widget_refresh_interval"
+			android:summaryOn="@string/setting_active" 
+			android:summaryOff="@string/setting_inactive"
+			android:defaultValue="true">
+		</CheckBoxPreference>
+		<ListPreference 
+			android:title="@string/setting_widget_refresh_interval" 
+			android:key="widget_refresh_interval"  
+			android:entries="@array/setting_widget_refresh_interval_options" 
+			android:entryValues="@array/setting_widget_refresh_interval_option_values"
+			android:dependency="check_widget_refresh_interval" 
+			android:defaultValue="1800000">
+		</ListPreference>
+	</PreferenceCategory>
+</PreferenceScreen>
+
+  2 ListPreference是设置项的其中一种类型，为普通项，点击会出选择dialog. 其他还有CheckBoxPreference,EditTextPreference, Preference等.
+  
+  3 用户需要编写一个扩展自PreferenceActivity的Activity，然后调addPreferencesFromResource()加载xml，然后ListPreference refreshIntervalSetting = (ListPreference)findPreference("notification_refresh_interval");等来操作每一项设置项.
+  
+  4 PreferenceScreen代表一个设置界面, PreferenceScreen可以套 PreferenceScreen，点击就会进入一个新界面.
+  
+数据:
+  1 Android负责数据的存储，数据以xml文件的形式存储，存储在/data/data/包名/shared_prefs/包名_preferences.xml中.
+  2 包名应该和这个Activity的包名一致.
+  3 getPreferenceManager.getDefaultSharePreferences(context)：根据context的包名查找xml文件，获得SharedPreferences对象.  
+  4 过程: onCreate()->PreferenceActivity::onCreate()->onCreatePreferenceManager()->new PreferenceManager(this, FIRST_REQUEST_CODE)->init(activity)->setSharedPreferencesName(getDefaultSharedPreferencesName(context)); 而context是这个activity.
+    所以存储的包名是由这个activity的包名决定.
+  5 可以自己定义存储的文件名:调用getPreferencesManager().setSharedPreferencesName("想定义的文件名")；Activity的mPreferenceManager会存储这些信息.
+    
+    
+    
+活动文件夹:
+   在屏幕上长按->出现Add to Home Screen->选Folders，里面的选项就都是活动文件夹，这些应用程序可以单独放置在桌面上.
+   活动文件夹需要两部份:
+     1 UI：需要一个Activity的支持: intent-filter: <action android:name="android.intent.action.CREATE_LIVE_FOLDER"/>   
+     2 ContentProvider提供数据: 
+      <provider
+       android:authorities="com.ai.livefolders.contacts"
+       android:multiprocess="true"
+       android:name=".MyContactsProvider"/>
+   
+   需要的Activity通过setResult(RESULT_OK, intent)来在桌面上创建Folder.
+   intent需要提供4个东西: 文件夹名称, 图标, EXTRA_LIVE_FOLDER_DISPLAY_MODE, uri. uri为需要查询的ContentProvider所提供的uri.
+   
+   
+   
+ContentProvider:
+  android:authorities="com.android.contacts" 必需手机内唯一.   
+  
+  
+搜索:
+  一个Activity响应搜索，需要满足一下几步:
+    1 manifest.xml:
+       <intent-filter>      
+          <action android:name="android.intent.action.SEARCH"/>
+          <category android:name="android.intent.category.DEFAULT"/>
+       </intent-filter>
+       <meta-data android:name="android.app.searchable" android:resource="@xml/searchable" />  
+    2 searchable.xml文件放于res/xml文件夹下:
+        <?xml version="1.0" encoding="utf-8"?>
+        
+        <searchable xmlns:android="http://schemas.android.com/apk/res/android"
+        
+        android:label="@string/hello"
+        
+        android:hint="@string/hello" /> 
+        
+        其中label和hint都必需为一个string资源引用，不能直接用字符串.
+        
+     3 在Activity中调用public boolean onSearchRequested()；引发搜索框. 如果希望禁止搜索框，那么重写这个方法，直接返回false.
+     
+     如果希望整个应用程序响应搜索框，那么在manifest.xml中为application增加：
+      <meta-data android:name="android.app.default_searchable" android:value=".Test1" />
+      
+      android:value指定了响应搜索并用于显示的activity.   
+      
+     开启全局搜索： 设置setDefaultKeyMode(Activity.DEFAULT_KEYS_SEARCH_GLOBAL);  
+     
+     
+     下面这句话决定了是否可以开启搜索，并指定承接搜索结果的activity.
+     <meta-data android:name="android.app.default_searchable" android:value=".SearchActivity" />
+     
+     以下的设置是为承接搜索结果得activity设置, 只有设了以下设置的activity才能承接结果.      
+           <meta-data android:name="android.app.searchable" android:resource="@xml/searchable" 
+           
+           <intent-filter>      
+              <action android:name="android.intent.action.SEARCH" />
+              <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            
+     如果manifest.xml里没有承接结果的activity，那么也不会开启搜索框(也就是没有设置android:name="android.app.default_searchable" android:value=".SearchActivity).       
+       

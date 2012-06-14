@@ -1,0 +1,20 @@
+<FrameLayout android:id="@+id/picture1_layout"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                >
+                <ImageView android:id="@+id/img_subinfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="#ff0000" 
+                    android:src="@drawable/test1"
+                   
+                    />
+</FrameLayout>    
+
+  如果test1这个图片的大小是118*38, 宽度大于外层FrameLayout(50dp)或者ImageView的宽度,那么在实际计算时，会将图片等比例缩到宽度等于50dp的大小，然后使用缩之后的图片宽度来绘制图片，但是使用图片的原始高度来绘制整个FrameLayout.
+  
+  也就是说,图片的显示是等比例的，但是整个Layout的高度被图片的原始高度撑大了.
+  
+  修改方法:将FrameLayout和ImageView的android:layout_width都设置成wrap_content.
+  
+  9patch图片若不画右边和下边，那么padding会不正常.

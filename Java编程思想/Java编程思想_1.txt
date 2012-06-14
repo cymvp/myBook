@@ -1,0 +1,62 @@
+枚举类型：
+  public enum {};
+  枚举类型是一种类.
+  enum类对象可以直接调用==比较.
+  enum实际上就是一种对象实例固定的类，它的每一个域都是一个该类的对象.
+  enum不能继承.
+  可以向enum中添加方法，这是最后一个域后必须要添加";"号.
+  enum的定义类似于：
+  final class Explore extends java.lang.Enum{
+    public static final Explore HERE;
+    public static final Explore THERE;
+    public static final Explore[] values();
+    public static Explore valueOf(java.lang.String);
+    static{};
+  }
+  final class表明enum不能被继承;
+  extends java.lang.Enum表明与Enum的关系;
+  public static final Explore HERE表明每个元素实际上是enum类的一个实例;
+  values()方法是编译器为enum添加的，并不是Enum的方法.
+  
+  enum可以实现多个接口.
+  接口中可以定义enum类型:
+  interface Food{
+    enum Appetizer implements Food{
+        SALAD, SOUP, SPRING_ROLLS;
+    }
+  }
+  enum可以为每一个域实现或者override方法，这个方法可以是enum中实现的方法，也可以是enum中的abstract方法.
+  
+  
+int 和 double, 使用比较运算符可以通过， 但是不能使用赋值语句： int i = (double)j。
+
+package语句必须是除注释外的第一句话.
+Java包的命名规则是，必须是小写字母.
+
+String重载的操作符：+, +=.
+
+每个类都可以含有main()方法.
+
+重载:
+  子类如果定义了和父类的方法同名的方法，并不会隐藏掉父类的该方法,这点与C++不一样.
+  
+static:
+  当类A的final static int I和类B的final static int I互相赋值初始化时，为何不会出错?
+  
+类:
+  类对象的创建顺序: 
+    1 首先调用父类的默认构造器(如果没有，那么编译器会生成一个)，也可以显式调用父类的其他构造器，这点与C++不同. 
+    2 生成域成员.
+    3 执行本类的构造器.
+    在父类中调用的方法，如果被子类覆盖，那么会调用子类的方法，这点与C++不同. 
+  
+final:
+ final的类域必须要初始化，否则编译器报错.
+ final修饰的方法不能被Override.
+ private的方法隐含着final的修饰，private的方法不能被子类看到.
+
+Override: 
+基类构造器中调用的方法，是子类覆盖的方法，而不是基类自己的方法.      
+
+interface:
+  interface里的域默认是public final static; interface里的方法默认是public. 

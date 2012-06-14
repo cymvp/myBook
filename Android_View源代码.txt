@@ -1,0 +1,112 @@
+perFormTraversal()
+  desiredWindowWidth, desiredWindowHeight:
+  第一次进来，这两个值为屏幕大小;之后进来，这两个值为mWinFrame的大小.
+  
+  刚进来时，由于mAppVisible为true，且 mView.getVisibility()为Visiable(值为0),所以viewVisibility为0; 而mViewVisibility为Invisible(8),所以viewVisibilityChanged为true.
+  但是第一次进来，会将viewVisibilityChanged设为false.
+  
+  第一次进来，会调用host.dispatchAttachedToWindow(attachInfo, 0);将所有子View的mAttachInfo设为相同值.
+  
+  fullRedrawNeeded = true;
+  mLayoutRequested = true;
+
+  上面2个变量，当第一次进来，或者mWinFrame不等于原来mWidth，mHeight的时候， 为true.
+  
+  当mWinFrame不等于mWidth，mHeight时， windowResizesToFitContent = true;
+
+
+  如果需要mLayoutRequested:
+    如果是第一次:
+      host.fitSystemWindows(mAttachInfo.mContentInsets); 根据Rect调整mDecor的布局;这里Rect一般为状态栏大小.
+      ensureTouchModeLocally(mAddedTouchMode);设置TouchMode,调用mAttachInfo.mTreeObserver.dispatchOnTouchModeChanged(inTouchMode);通知所有linstner.
+    如果不是第一次，会查看:
+      mPendingContentInsets是否等于mAttachInfo.mContentInsets，决定是否重新host.fitSystemWindows(mAttachInfo.mContentInsets);
+      mPendingVisibleInsets是否等于mAttachInfo.mVisibleInsets，决定是否重新mAttachInfo.mVisibleInsets.set(mPendingVisibleInsets);
+      如果lp.width或者lp.height有一个为wrap_content,那么将windowResizesToFitContent = true; 且恢复desiredWindowWidth， desiredWindowHeight为屏幕宽度.   
+     
+    host.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+  
+  attachInfo.mRecomputeGlobalAttributes()这个不常用到，可以先跳过.
+  
+  windowShouldResize = true的条件：当mLayoutRequested为true，且windowResizesToFitContent为true(第一次进来，或者lp的宽高有一个是wrap_content),且VierRoot的宽高和measure后mView的宽高不一样.
+  
+  一般computesInternalInsets为false.
+  
+  当mFirst,或者windowShouldResize表示要reSize, 或者insetsChanged表示窗口之外的地方变化，或者viewVisibilityChanged:
+    ->relayoutResult = relayoutWindow(params, viewVisibility, insetsPending);
+    ->reLayoutWindow会更新surface；当新surface有效：newSurface = true; fullRedrawNeeded = true;
+    设置：  mWidth = frame.width();mHeight = frame.height();
+   
+   
+    mAttachInfo.mContentInsets: 通过
+    (1) ViewRoot::setView()指定:
+      ->sWindowSession.add(mWindow, mWindowAttributes, getHostVisibility(), mAttachInfo.mContentInsets);
+      ->然后赋值给ViewRoot.mPendingContentInsets.
+    (2)performTraversals()中:
+      ->当需要reLayout: mAttachInfo.mContentInsets.set(mPendingContentInsets);
+      ->当reLayout后: mAttachInfo.mContentInsets.set(mPendingContentInsets);
+      
+  mAttachInfo.mVisibleInsets的指定:
+    performTraversals()中:
+      ->当需要reLayout: mAttachInfo.mVisibleInsets.set(mPendingContentInsets);
+      ->当reLayout后: mAttachInfo.mVisibleInsets.set(mPendingContentInsets);    
+      
+  mPendingVisibleInset的指定:    
+    (1) ViewRoot::setView(): mPendingVisibleInsets.set(0, 0, 0, 0);
+    (2) relayoutWindow()-> sWindowSession.relayout();
+    (3) 收到RESIZED消息后: mPendingVisibleInsets.set(((ResizedInfo)msg.obj).visibleInsets);然后调用perFormTraversal().
+  mPendingContentInsets的指定:  
+    (1) ->relayoutWindow()-> sWindowSession.relayout();
+    (2) ->mPendingContentInsets和mWinFrame的宽高一样，都可以在RESIZED消息中设置，然后会调用perFormTraversal()重新计算:
+          ->mPendingContentInsets.set(((ResizedInfo)msg.obj).coveredInsets);
+    (3) ViewRoot::setView().  
+    
+    
+    
+2012.02.07
+
+View的measure()过程:
+  首先看ViewRoot如何决定根View的大小: childWidthMeasureSpec = getRootMeasureSpec(desiredWindowWidth, lp.width);
+    ->desiredWindowWidth：第一次进来，为屏幕大小；后面再进来，为窗口的大小，对于普通activity，这个值为屏幕大小;对于窗口，这个值为程序员设置的窗口大小.
+    ->lp.width：程序员希望的窗口大小；如果为>0的具体值，那么这个值应该等于desiredWindowWidth，因为第一次进来系统是按照这个值来relayout窗口的.
+    有一种情况下，lp.width不等于desiredWindowWidth: 
+      比如输入法弹出时，系统会Resize窗口，也就是强制变小窗口的大小：ViewRoot::mWinFrame的值. 然后会调用perFormTraveral(), 进来后lp.width仍然为程序员设置的大小.这样调用childWidthMeasureSpec = getRootMeasureSpec(desiredWindowWidth, lp.width);时，如果lp.width是具体值，那么返回的就是lp.width,后面也就会按lp.width来排布. 相当于: 窗口大小已经变小，而里面的内容size没有变化，也就是显示一半的感觉.
+      
+   然后会调用: host.measure(childWidthMeasureSpec, childHeightMeasureSpec); 传入的childWidthMeasureSpec为父View的大小和参数.
+   MeasureSpec.EXACTLY:意思是父View的大小已经确定，传给子View的size就是父View的size.
+    如果子View是MATCH_PARENT,那么自然是父View的size,且由于子View的size已经确定，那么子View也是MeasureSpec.EXACTLY.
+    如果子View是AT_MOST，那么说明子View不想按照父View的size计算.这时子View的size也不能确定，父View给子View的size是子View能显示的最大size.
+   MeasureSpec.AT_MOST:意思是父View的大小孩没有确定，但是可以给子View最大能显示的size.
+    无论子View是MATCH_PARENT，还是WRAP_CONTENT，子View都会设置为MeasureSpec.AT_MOST,也就是子View的大小也不确定，只能确定最大能显示的size.   
+    
+    
+    如果TextView在一个FrameLayout中，那么这个TextView对应的mLayoutParams的类型就是FrameLayout$LayoutParams.
+    设置的WindowManager$LayoutParams是属于WindowManager::DecorView的.
+    如果我们自己定义一个Window，那么我们定义的WindowManager$LayoutParams会冲掉xml中根View定义的属性.
+    
+    measureChildWithMargins():
+      ->传入的是父View的parentWidthMeasureSpec，获得的是该子View的childWidthMeasureSpec.
+      ->由于里面使用了final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();强转，也就是这个child的父View必须为子View生成MarginLayoutParams的对象.
+     
+     设host为FrameLayout： 
+     host.measure(childWidthMeasureSpec, childHeightMeasureSpec);  /* View::measure()，这个方法不能被重写. */
+       ->host.onMeasure(widthMeasureSpec, heightMeasureSpec);      /* FrameLayout::onMeasure() */
+       ->对于每一个host的子View, measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+          ->getChildMeasureSpec(); 获得子View的childHeightMeasureSpec， childWidthMeasureSpec
+          ->child.measure(childWidthMeasureSpec, childHeightMeasureSpec); 
+          
+    LinearLayout::onMeasure()的分析：
+      resolveSize(int size, int measureSpec):
+        ->size为这个View计算后的大小; measureSpec为通过: 父View的MeasureSpec +子View的LayoutParams+父子View之前的padding,一起计算出来的子View的MeasureSpec.
+        ->这个方法的意思就是: 根据specMode决定这个子View的size到底是多少:如果是MeasureSpec.EXACTLY，那意味着这个View的size已经确定，就是specSize；如果是MeasureSpec.AT_MOST，那意味着这个View的size最大不能超过specSize，所以选specSize和size小的那个.
+        
+      host.measure(childWidthMeasureSpec, childHeightMeasureSpec):   childHeightMeasureSpec是上面说的父View的measureSpec,host的layoutParams，padding共同决定出的host的measureSpec.
+      
+      1 开始依次计算每个子View的size，当碰到第一个layout_weight不为0的子View，传入的usedHeight开始为0.
+      2 计算完所有子View的size后，mTotalLength为所有子View的size相加后的结果. 这时这个mTotalLength不一定是最终值，因为有可能这个LinearLayout的measureSpec为AT_MOST，但是mTotalLength的大小超过了LinearLayout的最大size(这个size由LinearLayout的父View传进来),所以要和measureSpec做个比较.
+      3 决定了LinearLayout的size后，如果这个size小于LinearLayout允许的最大size，那么会将剩余的size按比例分配给layout_weight不为0的子View;反之，如果这个size大于LinearLayout允许的最大size,那么会按比例缩小Layout_weight不为0的子View.最后LinearLayout的size会等于specSize为止.
+      
+        size小于LinearLayout允许的最大size的例子:LinearLayout比较空，所有子View没有占满LinearLayout的空间.
+        size大于LinearLayout允许的最大size的例子:每个子View都指定具体高度值，所有子View的size相加超出了specSize.如果这时有些子View有layout_weight,那么就会执行上面的流程.
+      
+               

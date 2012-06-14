@@ -1,0 +1,13 @@
+1 转屏后, ViewRoot的宽高都是读的系统mView.getContext().getResources().getDisplayMetrics();然后host.measure()都是使用的转屏以后的数据.
+
+2 手机竖->横，measure()会调用两次，横->竖会调用两次. 模拟器竖->横，measure()会调用一次，横->竖会调用两次.
+
+3 在onLayout()中调用requestLayout()没有用，因为layout()后会清除FORCE_LAYOUT这个flag.
+
+4 View::measure()->子View的onMeasure()
+
+5 ViewGroup::measureChildWithMargins()，会调用getChildMeasureSpec()设置子View的childWidthMeasureSpec；如果子View的width是具体值，那么就会用子View的值来设置childWidthMeasureSpec；子View
+的height同样是这样.
+
+6 精确控制子View宽高的方法(即根据父View的大小设置子View的宽高): 自定义父ViewGroup和子View,在父ViewGroup的onMeasure()中，先替换掉getChildMeasureSpec()，父ViewGroup的值代替子View的值传给子View的measure()方法，这样子View
+等于就知道了父ViewGroup的大小；也可以先调用 setMeasuredDimension()设置父ViewGroup的大小，然后就可以在子View中通过getParent().getWidth()拿到父ViewGroup的大小了。

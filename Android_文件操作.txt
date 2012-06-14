@@ -1,0 +1,6 @@
+C盘相当于/data; 每个应用程序都在/data/data/PackageName下; /data不允许随意操作.
+
+context.getCacheDir()等3个方法分别返回应用程序的主目录，cache目录，和database目录. 此外还有files目录，由openFleOutput类创建; share_prefs目录由SharedPreference类创建.此外还有lib目录，也应该是由某个类来创建.
+
+创建的文件有权限管理，如Activity.MODE_PRIVATE等.
+

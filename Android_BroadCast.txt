@@ -1,0 +1,47 @@
+注册广播接收类的方法:
+  1 使用AndroidMainifest.xml：
+  
+     <receiver android:name = ".MyBroadCast">           /* .MyBroadCast一定是要接收的类，且该类必须为public，否则Android无法找到该类.前面可以不带包名. */
+    <intent-filter>
+    <action android:name = "myBroadcastTest"></action>  /* action的名字，可以前面不带包名. */
+    </intent-filter>
+    </receiver>
+    
+    这种方式注册的广播接收者是一直存在的.当广播到来，Android会检查所有在AndroidManifester.xml里注册的接收者，如果Action一致，那么就会调用.
+    
+    
+  2 使用动态注册:
+      //生成广播处理   
+      MyDynamicBroadCast smsBroadCastReceiver = new MyDynamicBroadCast();   
+      //实例化过滤器并设置要过滤的广播   
+
+      IntentFilter intentFilter = new IntentFilter(ACTION_BROADCAST_TEST);  
+
+      //注册广播   
+      Test1.this.registerReceiver(smsBroadCastReceiver, intentFilter);    
+      
+      这种方式注册的广播接收者的生命周期与应用程序一致.多次调用会注册多次.
+      
+ 发送一个广播消息:
+     Intent intent = new Intent(ACTION_BROADCAST_TEST);
+     sendBroadcast(intent);     
+     
+     动态注册的方式, 不会多次创建; 在xml中定义的方式，每次用到时都会创建一个.
+     
+ ContentProvider: 在应用程序启动时 就会注册到系统内，被调用onCreate()方法.   
+ 
+ 2012.6.14：
+ 
+  一些广播是系统广播，普通应用程序是不能发送的，会做权限检查。如果不符合权限，则会crash. 如BOOT_COMPLETE广播.  
+  
+  在PackageManagerServer中:
+   if (callingUid == Process.SYSTEM_UID || callingUid == Process.PHONE_UID
+                || callingUid == Process.SHELL_UID || callingUid == 0) {
+            // Always okay.
+        } else if (callerApp == null || !callerApp.persistent) {
+            try {
+                if (ActivityThread.getPackageManager().isProtectedBroadcast(intent.getAction())) {......}
+  
+  
+      
+      

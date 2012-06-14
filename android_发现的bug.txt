@@ -1,0 +1,120 @@
+HTC G6:
+ 
+条件:
+  
+  1 当使用下拉刷新控件(FrameLayout的实现)包住ListView, FrameLayoutPullToRefreshView的高度为fill_parent, ListView设置的为WrapContent.
+  2 如果Activity设置的theme为：parent="android:style/Theme.Light.
+  
+  
+  <com.example.android.FrameLayoutPullToRefreshView
+                android:id="@+id/pulldown_view"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical"
+                android:background="#ff0000"
+           >     
+
+ <ListView 
+        android:id="@+id/listView1" 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:cacheColorHint="@drawable/transparent"
+        android:divider="@drawable/gray1"
+        android:dividerHeight="1px"
+        >
+       </ListView>
+     </com.example.android.FrameLayoutPullToRefreshView>
+     
+出现的问题 :
+   整个的背景是白色的,也就是无法透出Activity最下面的背景色.
+   
+补充:   
+  1 如果不使用下拉刷新控件，那么背景可以透出最底色(原因是ListView的WrapContent生效了,但是ListView仍然不是透明的).
+  2 如果去掉Activity的parent="android:style/Theme.Light theme，那么也可以透出最低色.
+  3 如果设置下拉刷新控件的高度为WrapContent，也可以透出最底色.
+  
+  在三星手机上没有发现这个问题.
+  
+  解决问题:
+  
+  1 解决条件2: 
+  
+  如果不使用下拉控件，那么ListView显示的是正常高度;如果使用下拉控件,那么ListView显示的是最大高度.
+  
+  Theme.Light表示用白色铺背景.否则用透明色(黑色?)铺背景.
+  
+  而HTC g6手机，当设置为Theme.Light时，ListView会挡住他下面的View.所以:我猜测HTC的手机，当设置为Theme.Light时，也将ListView的背景设置为了白色. 经过测试，果然是这样,为ListView设置: android:background="@null",就可以将底下的背景透上来了.
+  
+  以下代码如果不设置android:background="@null", 那么显示不出整体颜色(见最后部分代码):
+  
+  2 解决条件1:
+  
+    经过跟代码，我发现是我自己的问题: 在调整ListView的Layout以控制Padding时，我使用了如下调用:
+    
+    /* 下拉刷新控件的onLaout： */
+    protected void onLayout(boolean paramBoolean, int paramInt1, int paramInt2, int paramInt3, int paramInt4)
+  {
+    super.onLayout(paramBoolean, paramInt1, paramInt2, paramInt3, paramInt4);
+      
+    mPullHeader.layout(0, -mPading - MAX_LENGTH, getMeasuredWidth(),  -mPading);
+  
+    mPullContainer = getChildAt(1);
+    
+    mPullContainer.layout(0,-mPading, getMeasuredWidth(), getMeasuredHeight() - mPading);
+  }
+    
+    但是getMeasureWidth()方法是调用的下拉刷新控件的，不是mPullContainer(ListView)的，所以导致将ListView无形中拉到最大了!
+    
+    应该加obj.***, 改为:
+    
+        protected void onLayout(boolean paramBoolean, int paramInt1, int paramInt2, int paramInt3, int paramInt4)
+  {
+    super.onLayout(paramBoolean, paramInt1, paramInt2, paramInt3, paramInt4);
+      
+    mPullHeader.layout(0, -mPading - MAX_LENGTH, mPullHeader.getMeasuredWidth(),  -mPading);
+  
+    mPullContainer = getChildAt(1);
+    
+    mPullContainer.layout(0,-mPading, mPullContainer.getMeasuredWidth(), mPullContainer.getMeasuredHeight() - mPading);
+  }
+  
+  <FrameLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+<!--      android:id="@+id/guide_image" -->
+<!--      android:background="@drawable/guide_friend" -->
+
+ <com.example.android.FrameLayoutPullToRefreshView
+                android:id="@+id/pulldown_view"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical"
+                android:background="#ff0000"
+           > 
+
+ <ListView 
+        android:id="@+id/listView1" 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:cacheColorHint="@drawable/transparent"
+        android:divider="@drawable/gray1"
+        android:dividerHeight="1px"
+        android:paddingTop="100dp"
+        android:background="@null"
+        >
+       </ListView>
+
+</com.example.android.FrameLayoutPullToRefreshView>
+
+</FrameLayout>
+   
+   
+   这个问题我调试了整一天啊！
+  
+ 
+  
+   
+    

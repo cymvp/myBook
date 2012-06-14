@@ -1,0 +1,13 @@
+1 onLayout()何时需要覆盖? 当调用invalidate()时，ViewRoot会在scheduleTraversals()发送sendEmptyMessage(DO_TRAVERSAL);会导致重新Layout. 所以会重新把子View都回复原处。这就必须要覆盖onLayout().
+
+2 GestureDetactor会有条件地调用OnScroll(),所以onScroll并不能处理所有的move事件。所以需要在onTouchEvent()中截获漏掉的move事件.
+
+3 如果ViewGroup中没有能响应Touch Event的子target，那么在dispatchTouchEvent()中就不会走到第二个onInterceptTouchEvent()，而是会直接调用View.dispatchTouchEvent()。
+
+4 调用requestLayout()的View，会设置上force_layout的标志，并将其父View都会设置上，但是对于子View不会设置。而当子view调measure时，会判断子view是否设置了force_layout标志，或者是否measureheight等参数有变化，如果都不满足，那么不会真正重新layout.所以如果想使子View重新layout那么就需要在子View上调用requestLayout().
+
+5 如果ListView中的某项里有一个Button，不管是直接子View还是间接的子View，都会出现该项不能有选中态的情况。
+
+6 子View如果不是Visiable状态，那么子View开始动画时，不会真正画，因为子View的DRAW标志没有设置。这时需要调用父view的invalidate().
+
+7 当ViewGroup的dispatchEvent返回false时，才会调用activity的onTouchEvent().所以Activity的优先级低.

@@ -1,0 +1,8 @@
+使用泛型的Class: Class<T>，那么很多方法都是基于泛型的:
+class A; Class B extends A;
+B b = new B();
+Class<B> cb = B.class;//可以，因为不是动态识别，编译器就可决定.
+Class<B> cb = b.getClass() ;不行，因为是运行期决定，所以必须为: Class<? extends B>，因为虽然不知道是什么类型，但是知道一定是B的子类.
+Class<? super B> cb = B.class.getSuperClass(); /* 也是运行期决定，虽然不知道类型，但是一定是B的父类. */
+
+Class.inInstance 和obj instanceof 类名 的功能相同.

@@ -1,0 +1,45 @@
+Service的使用:
+
+Service分为普通Service，复杂Service: Bind Service和进程间服务，后面两个都是Bind Service.
+
+
+Service需要在AndroidManifest.xml中定义android:name, <action android:name/>.指定创建什么类对象，和启动Service的方式.
+
+普通Service就是简单继承自Service的类，实现几个特定方法: onStart, onStop, onCreate，onBind.
+onBind方法可以只返回null,因为这个方法在Bind Service中会用到，返回一个实现了IBind的类对象给Client端.
+普通Service处于UI线程.
+启动普通线程的方法: new一个intent，指定Action，然后：startService(intent).
+
+Bind Server如果服务目标是位于同线程内的Client，那么只需要实现OnBind()方法,通过这个方法返回可以操作服务类对象的东西.这个东西需要实现IBinder这个接口.通常继承自Binder，因为Binder实现了全部功能.
+
+启动Bind Server的方式: context.bindService().
+
+Bind Server还需要实例化一个ServiceConnection类，用于服务端调用onServiceConnected()返回操作服务类的东西，也就是OnBind()返回的东西.
+
+
+进程间服务:
+  从编程角度看，和Bind Server差不多，区别是实现一个Android指定的类: IXXXService.Stub类. 这个类代替上面的实现Ibinder的类对象，传递给Client端. Client端使用Stub的实例来操作服务.
+  
+Service必须在Manifest.xml中有相应的定义. 一个Service只会有一个实例.
+
+Service运行在main线程中.
+
+Service的intent设置，与Activity相似:同进程内，可以直接用类名来启动;不同进程间,用Action等来启动.  
+
+2012年 1月30号(领证纪念日，亲爱的乖乖):
+
+1 使用Bind方式启动的Service, 直到最后一个Bind的activity销毁，这个Service才会调用onDestroy销毁.
+
+2 Bind一个Service后，如果该Service被意外终结(包括抛异常和系统终结它)，Client端的onServiceDisconnected()会被调用;接着系统会自动重启该服务，并且会将Client端绑定到Service上.
+
+3 Bind方式不会调用onStart(),第二次绑定也不会再调用onBind();
+
+4 startService方式启动的Service会显示在系统服务列表中;bindService方式启动的Service不会显示在系统列表中.
+
+
+系统应用程序是指安装到系统system/app只读分区中的,不能被一般用户修改的程序.这些应用程序是build load时编进去的，不是在manifest.xml中指定的。系统应用程序会被置上FLAG_SYSTEM这个flag.
+程序保持不被系统kill掉的做法: 1 为上面说的系统程序；2 设置android:persistent = "true".
+
+
+
+

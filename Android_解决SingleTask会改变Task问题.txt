@@ -1,0 +1,34 @@
+现象条件: A1, A2, A1: 非SingleTask; B: SingleTask; 
+现象复现流程: A1->A2; A1->F;  A2->A2;
+现象：常按Home键会发现Dialog的图标变为A2的了，也就是RecentTask中的BaseIntent变为了A2.
+
+分析过程:
+  1 先想到查找RecentTask.BaseIntent的设置地方: 由TaskRecord.intent设置<-addRecentTaskLocked()<-startActivityUncheckedLocked()
+    但是查遍代码，发现在新建task时会调用addRecentTaskLocked()， 其他地方都没有在启动activity过程中直接设置，看来应该是直接去改的引用.
+    
+  2 查看修改TaskRecord.intent的地方，排除掉其他地方后:
+    发现在startActivityUncheckedLocked()：
+    if (top.frontOfTask) {
+        top.task.setIntent(r.intent, r.info);
+    } 
+    
+    也就是当frontOfTask == true时，会设置.
+  
+  3 查询frontOfTask的修改，发现只有finishActivityLocked()中会修改，这符合A1->F的流程.
+  
+  这时的过程: A1->A2时，task.intent是A1; A1->F; A2的frontOfTask为true.
+              A2->A2:由于第一个A2的frontOfTask为true,所以设置task.intent为A2.那么RecentTask自然就变为了A2.
+              
+  4 明白了以后，我又发现FLAG_ACTIVITY_CLEAR_TOP也会走到上面设置top.task.setIntent(r.intent, r.info);的条件中，于是作了试验:
+    A2为非SingleTask; A1->A2且intent.flag = FLAG_ACTIVITY_NEW_TASK|FLAG_ACTIVITY_CLEAR_TOP(加FLAG_ACTIVITY_NEW_TASK的原因是之后这个flag才会走入上面的流程), A2->A2'
+    结果发现：RecentTask不会变为BaseIntent.
+    这是为什么呢！？？？流程是一样的阿!!!!!!这个问题才真正费了我一下午到现在7点.
+    
+  5 查原因，adb shell dumpsys activity 命令能打印出TaskRecord和History；
+    发现A2'的frontOfTask为false, 再进一步跟踪，发现A2'是重新创出来的，而不是原来的A2.这说明代码流程中，addingToTask = true,最终导致调到3个参数的startActivityLocked().但是只有当top == null的时候, addingToTask才会等于true.这是不可能的阿？因为A2是存在的，所以performClearTaskLocked()一定会返回A2啊！
+    
+    反复检查，不知道问题出在哪里，因为流程感觉都是对的；最后查看文档关于FLAG_ACTIVITY_CLEAR_TOP的解释，发现文档说当launchMode为LAUNCH_MULTIPLE时，FLAG_ACTIVITY_CLEAR_TOP启动的activity就会先create一个新的，再finish掉旧的，而这正和现在的情况一下;又发现LAUNCH_MULTIPLE是LaunchMode的默认值！！！！！！
+    在代码里查找LAUNCH_MULTIPLE，发现果然在performClearTaskLocked()中：当设置了这个LaunchMode(默认值)，就会将A2 Finish掉，然后返回Null.
+    这样top就是null，也就不会走到设置task.setIntent()，且addToTask=true，这样就会重新创建一个A2'出来.
+    
+         

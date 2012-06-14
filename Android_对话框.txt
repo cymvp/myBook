@@ -1,0 +1,13 @@
+Activity对对话框的支持:
+ showDialog()
+  ->createDialog():
+    ->onCreateDialog(); 继承自Acitivity的类需要Override这个方法，创建Dialog，并返回.
+    ->dialog.dispatchOnCreate()
+      ->onCreate():应用程序需要继承一个Dialog的类，并Override这个方法，在这个方法中调用setContentView()来设置resource id.
+  ->onPrepareDialog(id, md.mDialog, args);
+  ->dialog.show()    
+      
+Dialog.show():
+       ->dispatchOnCreate()(如果之前没有创建的话)
+          ->onCreate()   
+       ->mWindowManager.addView(mDecor, l);

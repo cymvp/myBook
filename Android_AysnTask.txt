@@ -1,0 +1,15 @@
+AsyncTask无法用Cancel函数关掉.
+如果AsyncTask正执行Sleep时，调用cancel方法，会产生异常InterruptedException.
+如果希望能中途关掉AsyncTask，最好设置一个标志位，然后在doinbackground()里去查询这个标志.
+
+一个AsyncTask对象只能执行一次,想执行第二次，必需重新创建.
+
+AnsnTask的3个泛型参数: private class GetDataTask extends AsyncTask<Void, Void, Integer>
+第1个是传给doInBackground()的参数类型;第3个是传给onPostExecute()的参数类型.
+
+String-->int:  mStart = Integer.parseInt(params[0]);
+int-->String:  str.valueOf(1);
+
+Integer--->int: result.intValue();
+
+AsyncTask内部有一个InternalHandler extends Handler类的对象，该对象在AsyncTask对象创建时创建，所以如果AsyncTask在哪个线程创建，这个Handerl就属于哪个线程.当AsyncTask执行完毕后，会往这个handler发消息，那么消息自然的处理自然就在指定的线程中.消息中会带result，和AsyncTask对象.

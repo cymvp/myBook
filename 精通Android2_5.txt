@@ -1,0 +1,80 @@
+
+托管对话框是指: 将创建管理对话框的功能及时机已经集成在Activity类中;
+  当Activity.showDialog(一个id)调用时,会调用Activity的一系列方法:
+    onCreateDialog->onPrepareDialog.
+    
+    对于同一个id, onCreateDialog方法只会调用一次. onPrepareDialog()方法用于每次改变对话框内容.
+
+帧动画:    
+
+<animation-list  xmlns:android="http://schemas.android.com/apk/res/android">
+  	<item android:drawable="@drawable/gray8"
+  	      android:duration="50"/> 
+  	<item android:drawable="@drawable/white" android:duration="50"/> 
+</animation-list >
+
+AnimationDrawable:
+        AnimationDrawable ad = (AnimationDrawable)iv.getBackground();
+        if(ad.isRunning()){
+            ad.stop();
+        }else{
+            ad.start();
+        }    
+        
+补间动画:
+  android:layoutAnimation 当GroupView第一次laid out时，调用的动画.
+  
+  成为媒介文件:
+  
+  <layoutAnimation  xmlns:android="http://schemas.android.com/apk/res/android"
+      android:interpolator="@android:anim/accelerate_interpolator"
+      android:delay="30%"
+      android:animationOrder="reverse"
+      android:animation="@anim/listview"
+  >
+  </layoutAnimation>      
+  
+  上面的android:animation="@anim/listview"又指定了一个动画效果.
+  
+  成为动画文件：
+  
+  <set  xmlns:android="http://schemas.android.com/apk/res/android"
+      android:interpolator="@android:anim/accelerate_interpolator">
+      <scale
+        android:fromXScale="1"
+        android:toXScale="1"
+        android:fromYScale="1"
+        android:toYScale="0.1"
+        android:duration="5000"
+        android:pivotX="1%"
+        android:pivotY="1%"
+        android:startOffset="100">
+        </scale>
+        
+</set>
+
+
+<alpha  xmlns:android="http://schemas.android.com/apk/res/android"
+      android:interpolator="@android:anim/accelerate_interpolator"
+        android:fromAlpha="0"
+        android:toAlpha="1"
+        android:duration="1000"
+>
+</alpha>
+
+上面的动画文件，set, alpha, rotate, scale, translate都是可以设定的元素.也可以一个set中套用多个设置. set相当于Layout的使用，其他元素相当于View的使用.
+
+
+
+Service:
+  如果Service通过client的Context.startService()调用，那么执行顺序为onCreate()->onStart()->onDestroy().
+     其中onStart()会调用多次, 如果Context.startService()会调用多次的话. 但是onCreate()只会调用一次.
+  如果Service通过client的Context.bindService()调用，那么执行顺序为onCreate()->onBind()->onDestroy().
+     其中onCreate()和onBind()都只会调用一次, 即使多次调用Context.bindService().
+     当和Service绑定的Activity销毁时，自动会解除bind，这时Service也会随着被销毁.
+     
+  AIDL:
+     在client定义的aidl文件所定义的interface的包路径，必需与服务器端所定义的aidl接口的包路径一致.      
+        
+
+  

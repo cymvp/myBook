@@ -1,0 +1,131 @@
+Android的Pen传递机制和其他框架差不多。Pen先传给最底层的父View，然后View根据坐标，向子控件来传递pen.
+
+对于LinearLayout，继承子ViewGroup.这种控件里面可以放子控件,所以需要pen的再次dispatch.所以这种控件override了View.dispatchTouchEvent,主要是向自己的子控件分发pen(根据坐标来查找子控件).
+
+
+对于TextView, 由于这种控件里面不能再放控件,所以可以直接使用View.  
+
+View.dispatchTouchEvent的实现比较简单,就是单纯的调用onTouchEvent(event)来判断自己是否响应这个pen消息.
+
+所以从上面看来，直接继承自View的控件是不能再套子控件的，如果需要套子控件，那么至少应该override View.dispatchTouchEvent来分发消息.
+
+KXIntroView直接继承自View，所以不能套子控件. 而又希望能自己决定是否处理pen消息,那么只override onTouchEvent(event).
+
+
+分发消息时，dispatchTouchEvent会调用子类的dispatchTouchEvent()，该函数返回boolen,如果返回true，说明该child控件处理了pen，那么父控件不再分发消息，直接返回.
+
+ViewGroup.class:
+
+     public boolean dispatchTouchEvent(MotionEvent ev) {
+     
+      ....//for循环
+       if (child.dispatchTouchEvent(ev))  {
+                                // Event handled, we have a target now.
+                                mMotionTarget = child;
+                                return true;
+                            }
+      ....                      
+        }
+
+
+一个View，如果接收了Down(OntouchEvent()返回true)，那么也会接收后面的Event,无论这个Event是否发生在该View上.当Move出该View时，会通过mPrivateFlags &= ~PRESSED;将pressed状态移除，并不是通过发Cancel event. 所以手移出去再移回来，并不会认为是click.
+
+Down Event:1 如果ViewGroup在onInterceptTouchEvent()中进行了处理，则不会传给它的子View, 调用父类View的的dispatchTouchEvent(Down Event), 并退出.下次再进来别的event时:
+            (1) 这时target应该为null，会直接调用ViewGroup的父类的的dispatchTouchEvent().
+            (2) 如果target不为null(不可能发生吧), 那么会走下面的3或者4.
+            
+           2 否则Down Event会传给子View：mMotionTarget.如果找到合适子View处理，那么退出;如果没有找到，那么调用GroupView的父类View的dispatchTouchEvent(Down Event), 并退出. 下次再进来时,会走3或者4.
+           
+其他Event：3 如果ViewGroup在onInterceptTouchEvent()中进行了处理，那么会给之前的target发送cancel event, 然后将target置为null, 并直接退出，也就是不走ViewGroup的onTouchEvent().而下次再有非down的event时，会调用ViewGroup的父类的的dispatchTouchEvent().
+           4 否则Down Event会传给target：mMotionTarget.然后调用target的dispatchTouchEvent(Down Event), 并退出.           
+           
+           总共两次截获:
+           1 onInterceptTouchEvent()截获Down Event, 截获成功则调用GroupView的父类View的dispatchTouchEvent(),返回;
+           2 onInterceptTouchEvent()截获其它Event, 截获成功则重置mMotionTarget，返回true;下次再进来就直接调用GroupView的父类View的dispatchTouchEvent(),因为这时mMotionTarget = null;
+           
+DispatchEvent的流程:
+  1 处理PenDown Event: 如果在onInterceptTouchEvent()中截获，那么不会往子View中传;否则会往子View里找处理该event的target,并mMotionTarget = child,然后退出.
+  2 如果mMotionTarget == null, 则调用ViewGroup的父类的的dispatchTouchEvent(). （三种情况: onInterceptTouchEvent()已经处理； onInterceptTouchEvent()没有处理，也没有找到合适的子View；本来找到了合适的子View，但是在第二次的onInterceptTouchEvent中进行了截获，那么下次再进来就会走到这里，类似第二种情况.),这种情况下会退出.
+    Down Event到上面肯定会终结掉.
+  3 在onInterceptTouchEvent()判断，如果截获，那么直接退出; 否则给target发送cancel event，然后退出.
+  4 如果是cancel event，或者up event，那么将mMotionTarget = null.
+  5 调用GroupView的target.dispatchTouchEvent(ev)，退出.   
+  
+Scroller分析:
+   1 startScroll()方法:用于记录一个初始位置，和要scroll的偏移量. 在这个方法里面不会启动定时器，而是记录启动时间. 到下次调用computeScrollOffset()时，会和启动时间做比较，看过去了多少时间. 
+   2 computeScrollOffset(): 计算持续时间是否已经过去，如果没有过去，那么变换scroll后的坐标位置，返回true(表示还没有结束);如果已经过去，那么将mFinished = true,并直接返回false.
+   3 在ViewGroup的drawChild()中会调用child.computeScroll()，一般在这里调用computeScrollOffset()以计算偏移量.
+   一般在调用startScroll()之后要调用postInvalidate()；因为startScroll()中并不启动定时器，所以无法调用computeScrollOffset().但实际上已经启动了一个定时器，每次调用computeScrollOffset()时等于是time的callback响应函数.所以computeScrollOffset()调用的越频繁，绘制的次数越多.
+   
+   Scroll和Timer的区别:
+     我认为Timer不会丢帧，也就是Timer启动后，无论主线程是否有费时操作，Timer到时就会向主线程仍一个消息，这样做完费时操作后，还能继续处理这些消息.而Scroll的方法呢，一旦掉了startScroll()之后，时间就等于已经开始流逝了，而如果有费时操作，那么到下次执行computeScrollOffset()时，时间就有可能已经到时，那么就只能返回一次true(true意味着scroll还没有finish,可以绘制).
+     
+View的scrollBy()：参数是要scroll的偏移量.
+
+layout()的意思是父布局掉的，用于告诉子布局相对于父布局的坐标位置. onLayout()是一个容器的layout()被调用中调用的，用于调用子布局的layout()方法排布子布局.     
+
+坐标系:
+  Activity::mDecor的子View: LineraLayout,是全屏320*480, LinearLayout的第1个FrameLayout是title, 高度坐标是25， 50； 第二个FrameLayout的高度坐标是50, 480.
+  原因是在ViewRoot::performTraversals()中，调用没mDecor.fitSystemWindows(mAttachInfo.mContentInsets);mContentInsets是一个Rect,Y坐标为(0,25).所以设置LinearLayout的Y向PaddingTop为25.
+  
+  ViewGroup::dispatchTouchEvent()
+    final float yf = ev.getY();得到的是父View中的相对坐标.
+    final Rect frame = mTempRect; 记录了当前dispatch到的子view的宽度，高度坐标，都是相对坐标.
+    
+  子窗口的位置都是相对于父窗口的.根窗口(应用窗口，params的token设为null, android会为其设置为activity的token)的位置相对于整个屏幕. 
+  
+  ViewRoot的mWinFrame在relayoutWindow时设置为窗口相对于屏幕的位置，然后赋值给attachInfo.mWindowLeft和attachInfo.mWindowTop.  
+  
+  父窗口消失，子窗口也会消失.
+  
+  可以用popup.setFocusableInTouchMode(true);将View设为可以获得焦点.
+  
+  View的Touch分析:
+  
+  1 dispatchTouchEvent()先调用mOnTouchListener.onTouch(this, event)，如果返回true，说明应用程序截获并处理了消息，那么直接退出. 这个是在setOnTouchListener()中设置.
+  2 否则调用onTouchEvent(event)；
+  
+  onTouchEvent(event)
+    1 viewFlags & CLICKABLE, 能点击才继续.
+    
+ View::refreshDrawableState()
+  ->mPrivateFlags |= DRAWABLE_STATE_DIRTY;
+  ->drawableStateChanged();
+    ->通过getDrawableState()得到当前状态对应的int值.
+    ->mBGDrawable.setState();
+      ->onCreateDrawableState(0);
+        ->如果View设置了DUPLICATE_PARENT_STATE，那么会调用父View的onCreateDrawableState()来得到Drawable数组.
+        ->否则通过View自己的规则得到Drawable数组.
+  ->parent.childDrawableStateChanged(this); 
+  
+    GroupView::childDrawableStateChanged()
+      ->如果这个GroupView设置了FLAG_ADD_STATES_FROM_CHILDREN，那么这个GroupView也会调用refreshDrawableState(),也就是会跟着子View变化.
+   
+   ViewGroup::drawableStateChanged():
+    ->判断如果ViewGroup设置了FLAG_ADD_STATES_FROM_CHILDREN，那么抛异常退出，即FLAG_NOTIFY_CHILDREN_ON_DRAWABLE_STATE_CHANGE不能和FLAG_ADD_STATES_FROM_CHILDREN共存.
+    ->遍历如果某个子View设置了DUPLICATE_PARENT_STATE，那么也调用该子View的child.refreshDrawableState().
+    
+    
+    ViewGroup::onCreateDrawableState()
+      ->如果ViewGroup没有设置FLAG_ADD_STATES_FROM_CHILDREN，那么会调用父类View的onCreateDrawableState()得到Drawable数组.
+      ->如果设置了FLAG_ADD_STATES_FROM_CHILDREN，那么会检测所有的子View,如果某个子View状态改变了，那么GroupView就会改变.
+    
+  FLAG_NOTIFY_CHILDREN_ON_DRAWABLE_STATE_CHANGE：如果某个子View设置了DUPLICATE_PARENT_STATE，那么GroupView就会设置这个flag，表明某个子View想要随ViewGroup改变.
+  FLAG_ADD_STATES_FROM_CHILDREN: 应用程序设置的，当某个View变化时，会通知它的父View; 当父GroupView设置了这个flag,就会调用ViewGroup::refreshDrawableState(). 
+  
+  子View状态改变: 
+    ->改变自己的外观; 
+    ->通知父View;
+      ->如果父View设置了FLAG_ADD_STATES_FROM_CHILDREN，那么会调View::refreshDrawableState()更新自己状态(这个流程的前提是不能设置FLAG_NOTIFY_CHILDREN_ON_DRAWABLE_STATE_CHANGE)
+          ->ViewGroup::drawableStateChanged(): /* ** */
+            ->View::drawableStateChanged()
+              ->ViewGroup::onCreateDrawableState(0);  
+                ->如果设置了FLAG_ADD_STATES_FROM_CHILDREN，那么检测如果有子View状态改变，就改变. 否则使用View::onCreateDrawableState()得到状态.              
+            ->如果设置了FLAG_NOTIFY_CHILDREN_ON_DRAWABLE_STATE_CHANGE，那么通知设置了DUPLICATE_PARENT_STATE的子View重绘. 其实走不到这里，因为两个flag会冲突，不做冲突判断就又会调子View的refreshDrawableState()，导致死循环.
+            ->再通知这个ViewGroup的父View.
+      ->如果没有设置 FLAG_ADD_STATES_FROM_CHILDREN，则直接退出.
+      
+   ViewGroup状态改变:从上面的/* ** */ 开始执行，只是子View不会有状态改变，且如果ViewGroup没有设置FLAG_ADD_STATES_FROM_CHILDREN，可以进入FLAG_NOTIFY_CHILDREN_ON_DRAWABLE_STATE_CHANGE流程.
+   
+   综上所述,点子View让父View跟着改变，和点父View让子View跟着改变, 不能共存.        
+              

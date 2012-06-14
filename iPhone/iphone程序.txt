@@ -1,0 +1,2 @@
+以前有mainWindow.xib时，file'owner是appdelegate, 所以应用程序启动时，自动会找该appdelegate.现在用main()中指定了，所以指定的appdelegate就是要使用的appdelegate.
+以前有mainWindow.xib时，在xib中以及定义好了window，而且delegate的一个成员变量已经和window进行了绑定;现在4.2中，window在delegate中生成;且window中有一个RootViewController。

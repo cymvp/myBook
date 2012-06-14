@@ -1,0 +1,30 @@
+有几种情况，可以不Override equals()方法:
+ 1 每个实例应该就是惟一的，比如Thread。这些对象使用Object的equals来比较，应该就是比较对象的地址.
+ 2 超类的equals的方法够子类用了.
+ 3 一个类的equals()方法不会被调用，也就用不着改写.
+ 
+ 一般某个类有自己的"相等"的概念时，就应该重写equals()方法.比如String, Integer, Date.
+ 对于任意的非空引用值x,x.equals(null)一定是返回false(就是不与null相等).
+ 
+ toString():
+ println和连接符"+",还有assert(),会自动调用toString().
+ Object::toString()的实现是: 类名@hashcode值.
+ 
+ Object::Clone()的内部会调用instanceof Cloneable来判断当前对象是否implements Cloneable接口.也就是说：这个类implements了Cloneable，说明类的设计者知道要使用Ojbect::Clone()来复制对象，这样才允许使用.
+ 
+ Object:Clone()声明为Protected的原因是因为, 类2并不知道类1的Clone()是否真的够用(也许类1并不允许使用Clone(),但是类2却调用了),那么声明为Protected就是为了使类2不能直接调用类1的Clone().而当类1自己改写了Clone(),且声明为public,这样就等于告诉外界，类1的Clone()是可用的，正确的.
+ 
+ 总结: Cloneable是为了使程序员在知道Object:Clone()功能的情况下使用它.  声明为Protected的作用是，如果外界不清楚类1的Clone是否能用，就不会错用类1的Clone().
+ 
+ Object::Clone()不会调用构造函数.
+ 
+ Java没有virtual关键字，所有方法都是虚方法，所以不要再构造函数和Clone()中调用任何非final方法.这样是为了防止某些方法被子类override,而导致创建对象时出错.
+ 对于仅包含原始类型和非可变类型的成员的类，可以不实现clone().
+ 
+ 类1 override了Object:clone(),那么可以不throw CloneNotSupportedException. 不过对于为了被继承而设计的类，最好选择抛出异常，因为这样子类就可以选择是否支持clone功能.否则子类就只能选择抛出一个unchecked异常.因为子类override父类的方法时，不能抛出额外的父类方法没抛出的checked异常.
+ 
+ CompareTo接口的规则: 1 若 a > b, 则b < a. 2 若a > b, b > c, 则a > c. 3 a == b，则a和b跟c比较，产生结果一样.
+ TreeSet, TreeMap内部都会用到CompareTo接口.
+ 
+ 
+ 

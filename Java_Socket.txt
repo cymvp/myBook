@@ -1,0 +1,4 @@
+1 Android如果手机休眠, WiFi会相应的关闭。TCP连接也会相应断开.
+2 同一个端口可以对应多个socket, socket通过源ip，源port，目的ip,目的port，协议类型共同区分。
+  最常见的一个例子是监听套接字，当监听套接字accept()返回时，是返回一个新的socket,这个新的socket也运行在和监听socket同一个端口上.
+  connect(), readLine(), 包括accept(),都可以设置超时.

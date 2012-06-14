@@ -1,0 +1,102 @@
+1 FLAG_ACTIVITY_CLEAR_TOP:
+    如果使用这个Flag启动一个Activity, 那么在这个Activity之上的所有Activity都会被Finish,并且会重新激活这个Activity，激活分下面两种:
+      (1)如果Activity设了singleTask：那么这个activity不会被调onCreate().
+      (2)如果Activity设的是standard, 那么这个activity的onCreate()会被调用.
+      
+2 FLAG_ACTIVITY_NEW_TASK:
+    启动一个新的Task，并加载Activity.       
+    
+    
+    
+如果A->B, B要先把A关掉，再启动一个A, 那么如果用FLAG_ACTIVITY_SINGLE_TOP的方式，就需要先finish当前的Activity B,再show A,因为本Activity可能就是通过A启动的，所以在A里设置了FLAG_ACTIVITY_SINGLE_TOP，那么必需要先将本Activity关掉才能起作用.  
+
+
+关于SingleTask的总结:
+  标志说明: M:Main; L:Lanucher; S:SingleTask; H1: 按Home键会主屏，然后点击程序图标再次进入; H2: 长按Home键，然后点击程序Task图标; F:调用finish(); A:Activity;
+  
+  SingleTask的Activity的启动方式: 首先查找所有Task，看是否有符合要求的，要求见下面;如果有，则将Activity加入到该Task中：
+    加入的方式：
+      1 如果该Task已经有这个Activity：那么清掉该Actiivty上面的所有Activity，并调用onNewIntent();
+      2 如果该Task没有这个Activity: 那么将这个Activity加入到该Task后面.
+      
+    如果没有符合条件的: 那么会新启动一个Task，以这个Activity作为该Task的根节点.
+    
+    新启动Task的条件有:
+      1 使用StartActivity启动Activity，而不是StartActivityForResult;
+      2 Actiivity有SingleTask的LanucherMode;
+      3 没有Task的android:taskaffinity与该Activity相同.
+      
+  SingleTask的Activity全手机设备只能有一个. 测试方法: A1:S; A2:S; A1,A2的taskaffinity不同； A1->A2; A2->A1; A1->F; A2->F; 会发现最开始的A1也没有了.
+      
+  A1: 普通非S或者S; A2:S； A1->F; A1->A2: A2会新启动Task,TaskId已变；Task的BaseIntent也会变为A2;
+                          A1->A2; A1->F; A2不会在新的Task中启动.   
+  
+   H1的启动方式: Launcher起应用程序中设了M，L的Activity。与Task的状态无关.
+   
+   H1; A:M+L; H1->A: 
+     若A为S: 根据上面说的规则查找Task，然后决定是重启动一个新Task,还是放到某个符合要求的Task中. 一定会启动这个Activity.
+     若A非S: 找到相同android:taskaffinity的Task，然后将Task置于前台；如果找不到，那么重新启动一个Task. 不一定会启动这个Activity.
+     
+   H2的启动方式： 只是查找最近的Task，然后找到BaseIntent，也就是栈底的Activity A， 然后： 
+     如果A为S：同H1.
+     如果A非S: 同H1. 
+     
+   RecengTask的理解:
+     RecentTask是和android:taskaffinity绑定的，也就是说, 只要android:taskaffinity不同，那么就算是两个Task栈, 而如果android:taskaffinity相同，那么即使Task Id不同(新启动了一个Task), 在RecentTask中也是只算一个Slot.
+     
+     RecentTask的BaseIntent记录了栈底的Activity(也就是创建这个Task的根节点),一般不会改变，即使根节点早就finish掉了.
+     我发现了两种情况下，BaseIntent会改变:
+      1 如上面总结, 当相同的的RecentTask Slot中，Task Id变化了(启动了新的Task)，那么BaseIntent自然改变了.例子见上.
+      2 A1:S; A2:S; A1的onCreate()中，startActivity(A2), 且是通过H2的方式启动的A1，那么RecentTask Slot的BaseIntent会切为A2,即使Task Id没有变化.
+      
+      只有RecentTask的BaseIntent才决定Recent Task的性质,即使BaseIntent对应的Actiivty已经finish():
+      
+      A1 无; A2:S; A3:无;   A1->A2; A1->F; A2->A3; H1: A3不动; H2: A3不动.
+      A1 S； A2:无;A3:无;   A1->A2; A1->F; A2->A3; H1: A1加在后面; H2: A1加在后面(?这个没测试，不过应该是这样的).
+       
+  两个入口的测试: 通过上面的结论，可以容易推出下面结论:
+  
+    A1: L+M; A2: L+M; 两者android:taskaffinity相同; 会有两个程序图标,可以用icon和label区分: 在Recent Task中只会有一个图标.
+    
+    A1: +S: 
+       A2:L+M:  A1->H1->A2: A1会起来，A2不会. 这时H2:同前.
+       A2:L+M+S;  A1->H1->A2: A2会加在A1的后面. 因为A2是S,所以一定会启动. 这时H1或者H2: A2被清掉.
+       
+    A1: L+M:
+      A2: L+M:   A1->H1->A2: A1会起来，A2不会.
+      A2: L+M+S: A1->H1->A2: A2会加在A1的后面,因为A2是S,所以一定会启动. 这时H2:还是A2显示.
+      
+ 如果两个Activity的android:taskaffinity不相同,那么在RecentTask中，会出现两个程序图标，图标和label是根据Activity的设置; 也就是会有两个RecentTask栈.
+这时H2的启动，是分别启动各自的栈.   
+
+
+SingleTask的重要特性总结:
+  1 启动时，会首先查android:taskAffinity是否与某个已存在的task相同.
+  2 start这个SingleTask的activity时，会将它之上的activity都清掉，也就是强制显示这个activity.
+  3 当一个SingleTask的activity被start时，如果找到了相同affinity的task，那么会加入到这个task中，并将整个task置于所有task的最上面.
+
+FLAG_ACTIVITY_NEW_TASK:
+
+   Task的android:taskAffinity由根结点的activity决定. 拥有相同android:taskAffinity的activity从概念上讲，属于相同的task（从用户角度看，相同android:taskAffinity的activity属于同一个application）.
+   
+   android:taskAffinity决定了两件事情: 当activity带有allowTaskReparenting时，activity属于哪个task(我的理解是: android:taskAffinity相当于task的名字, 这个名字由根结点决定);当activity由 FLAG_ACTIVITY_NEW_TASK flag启动时，会属于哪个task(带这个flag的activity启动时，会查找是否相同taskAffinity的task已经存在). 
+     
+         
+   经过测试，发现FLAG_ACTIVITY_NEW_TASK也有SingleTask的特性1，特性3，   但不会有特性2，也就是说再run这个带FLAG_ACTIVITY_NEW_TASK的已经存在的activity时，不会清掉它上面的activity.
+   
+    这也符合点击程序图标launcher启动程序的过程:如果程序的affinity的task不存在，那么一定会启动程序; 如果已经存在，那么将程序的task调到最上面来.但是不会清掉程序中的activity， 也不会强制先show出这个带FLAG_ACTIVITY_NEW_TASK的activity.     
+       
+       
+       
+startActivityUncheckedLocked()参数: 
+  r:新的要启动的activity的HistoryRecord：每个Activity有一个HistoryRecord，ActivityManagerServer的mHisgory用来存储所有的Activity的HistoryRecord,也就是Activity统一管理.
+  
+  sourceRecord：启动该activity的HistoryRecord.
+  r.resultTo: 标识是否需要返回值给启动它的activity.
+  resultTo: 局部变量,每个Activity的mToken.一般不为空.
+  
+  
+  Android的activity共同放到一个List中维护，叫mHistory,位于ActivityManagerService中.
+  相同task Id的Activity都是挨着的,理由: 在performClearTaskLocal()中的代码看出,是连续清掉activity. 这个函数的作用是清掉某个activity上的所有activity.
+  
+  SingleTask相当于是clear_top和new_task的总合.      

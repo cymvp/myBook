@@ -1,0 +1,13 @@
+反编译资源:
+  使用命令:apktool d -f  F:\apk参考\1.apk F:\apk参考\res 
+    d是输出到文件夹，-f是覆盖原文件夹里的东西
+    这个命令需要apktool这个工具
+    
+反编译代码:
+  1 将apk包重命名为.rar，然后解压.
+  2 将解压后的classes.dex放到与dex2jar.bat同一个目录下,然后执行dex2jar.bat classes.dex，得到classes.dex.dex2jar.jar.
+  3 用jd-gui.exe打开classes.dex.dex2jar.jar，然后保存即可导出.
+  
+   
+内部类的引用方式：
+   EditActivity.access$2(this.this$0); 意思是调用外部类的一个private方法:access&2 这个方法被转化为static方法，参数是外部类对象.  

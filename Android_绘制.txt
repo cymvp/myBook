@@ -1,0 +1,1 @@
+1 Canvas(Bitmap bitmap): 在canvas上的绘制都绘绘制的bitmap中. 

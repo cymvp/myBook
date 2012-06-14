@@ -1,0 +1,98 @@
+
+
+ClassPath 和SourcePath：
+  ClassPath只有在运行的时候查找类时，或者编译阶段查找class文件时，才会用到，Javac在编译阶段会使用SourcePath来查找.java源文件.
+  
+  SourcePath可以指定多个: 
+    C:\project> javac  -sourcepath src;C:\Projects\XOM\src  src/com/elharo/gui/MainFrame.java 
+  指定src;C:\Projects\XOM\src为源文件查找目录.
+  
+  ClassPath标识了程序的基目录，所有的.class文件都从基目录开始，按包的定义目录来查找.
+  
+  设置了Classpath之后，就可以在任意目录下执行: Java 包路径\XXX(class文件).
+  
+  编译时，只需要用-d来指定.class文件的生成目录，java编译器会根据.java文件所在的包自动生成包的树状结构.
+  
+  C:\project> java -d bin -sourcepath src src\com\elharo\gui\MainFrame.java 
+
+  C:\project> java -classpath C:\classes;E:\lib\junit.jar  com.elharo.gui.MainFrame 
+  
+  /*
+   终于知道了package的用处. package命令指定了该java所在的基目录,如： package package1; 那么就等于指定了这个.java文件的class文件的基目录就是package1的父目录.
+
+    执行这个.java文件时就需要： java -classpath package1的父目录 package1.TestNormal
+  */
+    上面这段话应该不对. 应该是每个class文件中都记录了这个class的整个package名，一旦class编出来，那么它的namespace就已经确定了.
+     如一个com.test的类，无法进入com目录，再通过java test来执行.
+
+编译器查找过程:
+
+   Javac编译一个.java文件时，不会查看这个.java文件的package语句.它总是在当前文件所在的目录里查找(也就是认为当前文件属于当前目录对应的包).
+   如果这个.java文件如a.java引用了一个没有明确指出包的类b,那么就会查找a.java所在的目录(当前包)，以及a.java中import的类:如import com.horstmann.corejava.
+   
+   代码的组织结构会和生成的class组织结构一致.而代码的组织结构根目录由-sourcepath指定， class的组织结构由-classpath决定.  
+   
+   查询类b时，会根据-classpath的设置来找到类b的class文件的目录.同时根据-sourcepath来查找类b的.java文件. 如果类b的class文件不存在而.java存在，则创建一个;如果都存在，就会比较类b的class文件和b.java的新旧程度. 如果只有class文件存在，则使用这个class文件.
+   
+   同理查找corejava也一样，用-classpath的设置找到class文件的根目录，然后通过import的设置类查找.class文件. 只是classpath不一样.
+   
+   处于能根据sourcepath查到.java文件时才有引用到时比较b.java和b.class是否相等的可能性. 否则，根本不知道如何去取对方的.java文件.
+   
+   import语句指示了根据-sourcepath如何去查找.java文件，以及根据-classpath如何去查找.class文件.
+   
+   package语句保证了本.java文件的正确放置，如果目录位置和package语句中指示的不同，则会出错。
+
+      
+   
+举一个我的实验例子:
+  存放： src
+          ->package1
+            ->TestNormal.java
+            
+         src1
+          ->com
+            ->Testscr1.java
+  
+  目前有两个sourcepath：src和src1.
+  
+  TestNormal.java: 
+    package package1;
+    import package1.package2.Test2;
+    import com.Testscr1;
+
+    public class TestNormal {
+       public static void main(String[] args){
+           int aaa = 0;
+           System.out.println("adf" + aaa);
+           
+           Test2 a = new Test2();
+       }
+       Testscr1 tt = new Testscr1();
+    }     
+    
+ Testscr1.java:
+   package com;
+  import java.io.File;
+  
+  
+  public class Testscr1 {
+     public static void main(String[] args){
+         new File("aaa");
+         System.out.println("adf");
+     }
+  }
+              
+              
+  上面的程序在eclipse里是编译不过的，因为不知道去哪里找Testscr1，默认的sourcepath是src。
+  
+   使用命令行: E:\workspace\JavaTest>javac -d bin -sourcepath src;src1    src\package1\TestNormal.java 就可以编过.
+   
+   要注意的是, Testscr1.java必需要加package com; package的用处是
+   
+   
+
+  
+    
+
+
+

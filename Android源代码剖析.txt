@@ -1,0 +1,191 @@
+Window是一个抽象类,有方法可以获得WindowManager:
+
+Activity::attach()
+  -> mToken = token; Activity的IBinder对象
+  -> mWindow = PolicyManager.makeNewWindow(this); 获得Window对象，这个实际上是一个PhoneWindow对象.
+  -> mWindow.setWindowManager(null, mToken, mComponent.flattenToString());
+    -> mAppToken = appToken; Window的Token对象也就是Activity的.
+    -> wm = WindowManagerImpl.getDefault(); mWindowManager = new LocalWindowManager(wm); 获得LocalWindowManager对象.
+    -> mWindowManager = mWindow.getWindowManager(); Activity的WindowManager对象也就是mWindow的LocalWindowManager对象.
+  -> mWindow.setCallback(this);
+  
+  Token, Window, WindowManager, DecorView
+  
+  WindowManager.LayoutParams:
+    这个是用于被WindowManager加载的View的布局属性.
+    
+    每个View都有一个ViewGroup.LayoutParams mLayoutParams的属性，这个类是所有布局属性的基类.
+    只要是布局属性，都是给父View来使用的，view自己不会用到自己的布局属性.
+    
+    mGravity: 比如LinearLayout.LayoutParams的mGravity, WindowManager.LayoutParams的gravity都是用于告诉父View自己该如何摆到父View中的，相当于android:Layout_gravity而不是android:gravity.这又证明了，xml文件中，layout_开头的属性都是用于在父View中布局用的,和LayoutPrams类的属性一一对应.
+    
+  
+ 如果不指定gravity,那么自定义窗口的默认gravity是水平垂直居中.
+ 
+ 同一窗口内所有子View的mAttachInfo和该窗口的根View的mAttachInfo相同;每个子View的mAttachInfo的赋值是在ViewGroup的addView().
+ 窗口的根View的mAttachInfo与ViewRoot的mAttachInfo相同，根View的mAttachInfo的赋值是在ViewRoot的performTraversals()中,不是在setView()中.
+ 所以同一窗口的所有View的mAttachInfo都相同.
+ 
+
+2012.2.1:
+    generateLayout(): 先根据feature决定使用哪个xml文件生成布局，如使用:screen_title.xml文件. 这个布局包括title, content区域. 布局作为mDecor的一个子View.
+    布局如下: mDecor->LinearLayout->FrameLayout, FrameLayout(对应 mContentParent).
+    然后应用程序设置的布局，在PhoneWindow::setContentView()中使用mLayoutInflater.inflate(layoutResID, mContentParent);将该布局作为mContentParent的子布局.
+    
+    Activity, Window, WindowManager, DecorView, ViewRoot, AttachInfo, Params的关系:
+    
+    其实这里分两个阵营:
+    1 Activity, Window:
+      Activity->mWindow: 实现了Window类的PhoneWindow类对象. 这两者的token都是HistoryRecord.
+      
+    2 ViewRoot, AttachInfo, Params:
+      ViewRoot会存放标识窗口的token, 指向DecorView的mView. AttachInfo是辅助ViewRoot的信息类.
+      
+    这两个阵营通过WindowManager联系起来:
+    1 Activity::mWindow::mWindowManager是一个LocalWindowManager对象.
+    2 LocalWindowManager类的WindowManagerImpl对象存放3个数组，分别存储了Application中所有的ViewRoot, DecorView, Params.
+      
+    Activity::mDecor的在ThreadActivity::handleResumeActivity()中设置.
+    
+ 
+ 
+Activity的启动:
+  IActivityManager：相当于C/S共同约定的定义，记录了实际通信的接口声明.
+  ActivityManagerNative: 相当于IActivityManager的Stub,   用于同一进程内的Binder. ActivityManagerProxy:这里不是ActivityManagerNative的内部类；用于不同进程通信时，ActivityManagerNative的封装.
+  
+  ActivityManagerService: ActivityManagerNative的子类，用于作为S端.
+  
+  ActivityRecord:
+    activityInfo: ActivityInfo
+    packageInfo:  PackageInfo
+    
+    
+    scheduleLaunchActivity():
+      ->创建一个ActivityRecord对象并初始化;
+      ->发送H.LAUNCH_ACTIVITY消息给main线程,也就是ActivityThread的线程.
+   
+   handleLaunchActivity(): 处理H.
+      ->清除gcIdler;
+      ->performLaunchActivity()
+        ->设置ActivityRecord的intent.setComponent， 
+        ->获得activity对象: activity = mInstrumentation.newActivity(cl, component.getClassName(), r.intent);
+        ->创建ContextImpl对象;
+          mMainThread = ActivityThread的对象;
+          mPackageInfo = ActivityRecord的PackageInfo;
+          mContentResolver：创建一个;
+          mActivityToken:ActivityRecord.token
+       ->activity.attach()
+       ->r.activityInfo.getThemeResource(); activity.setTheme(theme);
+       ->mInstrumentation.callActivityOnCreate(activity, r.state);  
+          Activity.onCreate();
+       ->Activity.onStart();
+       ->Activity.onPostCreate();
+       ->mActivities.put(r.token, r);
+     ->handleResumeActivity()
+       ->performResumeActivity();
+          ->r.activity.performResume();
+            ->performRestart();
+                ->Activity.onRestart();
+            ->mInstrumentation.callActivityOnResume(this);
+                -> activity.onResume();
+            -> onPostResume();
+       ->wm.addView();
+       ->r.activity.makeVisible();
+       
+       
+  startActivity() -> startActivityMayWait()->startActivityLocked()
+  
+  startActivityLocked(): 
+    ActivityInfo aInfo为上一步中通过PackageManager创建.
+    IApplicationThread caller: Activity.mMainThread.getApplicationThread(): ActivityThread的成员.
+  
+    ->resultTo为源Activity的HistoryRecord对象; 根据它从mHistory取出赋值给sourceRecord(sourceRecord与resultTo是一个东西?)；
+    ->如果RequestCode>0,说明目标Activity需要返回结果给源Activity,所以将 resultRecord = sourceRecord.
+    ->launchFlags&Intent.FLAG_ACTIVITY_FORWARD_RESULT的判断:如果这个flag设置了，那么会将resultRecord设置为源Activity的源(也就是启动源Activity的Activity).
+      sourceRecord.resultTo:这个是记录谁启动了sourceRecord标识的activity，result向谁报告. 
+      resultRecord = sourceRecord.resultTo;
+      sourceRecord.resultTo = null;
+    ->检查caller(ActivityThread对象)所在的application是否存在，如果不存在，则错误并退出.  
+    ->检查权限.
+    ->检查是否可以switch.
+    ->检查pedding队列.
+    ->创建r: r.resultTo = resultRecord. resultRecord不一定等于sourceRecord，有可能等于sourceRecord的源.
+    ->startActivityUncheckedLocked().
+    
+  startActivityUncheckedLocked():
+      ->r.delayedResume = true: 不立即resume activity.  
+      ->mUserLeaving = (launchFlags&Intent.FLAG_ACTIVITY_NO_USER_ACTION) == 0; 如果设了这个flag,那么mUserLeaving = false,也就是不会调用onUserLeaving()
+      ->设定权限.
+      ->如果sourceRecord为null,说明不是通过activity启动的这个activity，那么要强制设置上FLAG_ACTIVITY_NEW_TASK这个flag.
+        如果源activity的launchMode为ActivityInfo.LAUNCH_SINGLE_INSTANCE，那么也要设置上FLAG_ACTIVITY_NEW_TASK这个flag.
+        如果目标activity的launchMode为singleTask或者singleInstance，那么也要设置上FLAG_ACTIVITY_NEW_TASK这个flag.
+      ->如果有activity要求目标activity有返回值(不一定是源activity)，而这个目标activity设置了FLAG_ACTIVITY_NEW_TASK，那么优先使用FLAG_ACTIVITY_NEW_TASK，而不返回值,并将r.resultTo = null；
+      ->初始化 boolean addingToTask = false;
+      ->如果设置了FLAG_ACTIVITY_NEW_TASK，或者目标activity的launchMode为singletask或者singleInstance,且必须没有要求返回值的activity:
+          -> 如果是ActivityInfo.LAUNCH_SINGLE_INSTANCE,调用findActivityLocked()查找；
+          -> 如果不是ActivityInfo.LAUNCH_SINGLE_INSTANCE,调用findTaskLocked(intent, r.info),返回已经存在的最上面的符合intent的activity.
+              r.task.affinity == info.taskAffinity: activity所在task的affinity与目标activity的affinity相等.
+              r.task.intent.getComponent().equals(cls): activity所在的task的启动task的activity的ComponentName与目标activity的ComponentName相等.
+              r.task.affinityIntent.getComponent().equals(cls)
+          ->如果上面已经找到符合的task：    
+            ->taskTop: 上一步中找到的和目标activity吻合的task的最上面的activity.
+            ->curTop: 当前最上面的activity.
+            ->如果准备激活的task不是当前最上面的task，且有源activity，且源activity的task是最上面的task:那么将准备激活的task放到最上面.    
+            ->如果目标activity是singleTask或者singleInstance，或者launchFlag有Intent.FLAG_ACTIVITY_CLEAR_TOP:
+              ->performClearTaskLocked():清掉目标activity之上的所有activity(包括非相同task的),然后如果lanuchMode是LAUNCH_MULTIPLE，那么也会清掉这个目标activity.当然
+              在这个流程下是不会的，因为目标activity一定是FLAG_ACTIVITY_NEW_TASK的.
+                如果目标activity在吻合的task中:
+                  ->如果目标activity是frontOfTask，那么top.task.setIntent(r.intent, r.info);
+                  ->deliverNewIntentLocked(top, r.intent); 可以在适当时机受到onNewIntent()消息;
+                如果目标activity不在吻合的task中:
+                    addingToTask = true; sourceRecord = taskTop;    
+           ->否则如果目标activity是吻合task的启动activity(比较的是ComponentName)：else if (r.realActivity.equals(taskTop.task.realActivity))
+              ->如果是FLAG_ACTIVITY_SINGLE_TOP：先不看这块儿
+              ->如果intent的filter不相同：那么还是addingToTask = true; sourceRecord = taskTop;也就是加到task上面.
+              ->否则跳过去，也就是会走最后的 if (!addingToTask) {resumeTopActivityLocked(null); return START_TASK_TO_FRONT;}；见下面"*"号；
+           ->否则没有设置FLAG_ACTIVITY_RESET_TASK_IF_NEEDED:这应该是最常见的，针对只设了FLAG_ACTIVITY_NEW_TASK，而没有设置LunchMode为singleTask或者singleInstance:
+             addingToTask = true; sourceRecord = taskTop; 也就是这个activity将会加到task中(top task还是 taskTop所在的task?).一般FLAG_ACTIVITY_NEW_TASK会走到这里,如已经发现了吻合的task,但是目标activity不是吻合task的根节点(启动activity).   
+          
+          -> * 如果addingToTask == false,也就是要新建task，那么会调用resumeTopActivityLocked(null);  一般已经确定launch哪个activity了的时候会走到这，如目标activity是singleTask，且它已经存在于某个task中. 还有就是FLAG_ACTIVITY_NEW_TASK的目标task,已经找到吻合task，且它等于task的起始activity(realactivity)，且intentfilter相等.  
+         
+     以上是处理了singleTask，SingleInstance， FLAG_ACTIVITY_NEW_TASK三种情况，且能找到和目标activity相吻合的task。
+      1 singleTask，SingleInstance：吻合task中有这个目标activity：将task提到最上面，clear掉上面的activity，然后调resumeTopActivityLocked(null).
+                                    吻合task中没有这个目标activity:将task提到最上面，然后准备将这个activity加入到task中.
+      2 FLAG_ACTIVITY_NEW_TASK: 将吻合task提到最上面, 然后准备将这个activity加入到task中.
+      如果和某个activity吻合，则该activity所在的task也为吻合task。 
+      
+      
+      
+     ->topRunningNonDelayedActivityLocked():返回栈中最上面的activity.
+     ->如果目标activity已经是栈中最上面的activity：只有FLAG_ACTIVITY_SINGLE_TOP， LaunchMode=LAUNCH_SINGLE_TOP或者LAUNCH_SINGLE_TASK这3种情况，不会重新创建activity，而是resumeTopActivityLocked(null); deliverNewIntentLocked(top, r.intent); 对于LAUNCH_SINGLE_TASK的activity能走到这，说明一定是在上面的流程中找到吻合的activity和task了，否则这里不会进来，也就是不可能和栈top的activity相等，所以一定是清掉它之上的activity了.
+       上面的情况下不能有返回值的请求.
+       
+    -> 如果需要新建task，则新建一个;条件：没有返回值+ FLAG_ACTIVITY_NEW_TASK + addingToTask == false.
+       设置newTask = true;
+    -> 否则:如果resourceRecord存在:
+        ->如果需要新建task,且FLAG_ACTIVITY_CLEAR_TOP:那么清掉
+        -> 否则:  r.task = sourceRecord.task;
+    -> 否则如果没有resourceRecord:说明是非activity启动的目标activity，那么r.task设置为最上面的activity所在的task.
+    -> startActivityLocked(r, newTask, doResume);      
+     
+     
+     resumeTopActivityLocked()
+        ->startPausingLocked()
+          调用thread的schedulePauseActivity()，该函数只是发一个消息就会立即返回，所以不会阻塞AmS线程.
+          ->后面没有做什么就返回了.
+        ->返回true；
+     
+     startPausingLocked()
+      ->thread.schedulePauseActivity()转入客户端的进程.
+        ->给自己发PAUSE_ACTIVITY消息;
+        ->handlePauseActivity()处理消息;
+          ->performPauseActivity();
+            ->performPauseActivity();
+              ->mInstrumentation.callActivityOnSaveInstanceState(r.activity, state);
+              ->mInstrumentation.callActivityOnPause(r.activity);
+          ->ActivityManagerNative.getDefault().activityPaused(token, state);
+            转入AmS的进程.
+            ->resumeTopActivityLocked() 
+          
+                                  
+                        

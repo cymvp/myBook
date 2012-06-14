@@ -1,0 +1,81 @@
+工程:
+  为了定义ProgressBar的样式，换一个转动的图标,且转动的速度可以控制.
+做法:
+  android:indeterminateDrawable="@drawable/progress_bar_drawable_white"，这个可以设置为一个静态图资源，也可以设置为一个animation.
+  如果设置为静态图资源，那么progressbar就不会转了.
+  如果设置为animation，那么有两种animation: <animated-rotate />，<rotate>.这是两种动画方式. 这两种动画方式既可以放在drawable文件夹下，也可以放在anim文件夹下.
+  
+  使用android:progressDrawable不行，这种方式实验下，发现只是设置progressbar的静态样式，也就是这么设后就不会自动转了(如果不设置动画),或者转动的时候不会用这个静态样式.也就是这个字段基本是用于ProgressBar不动的情况.
+  
+  一开始想到的就是使用<animated-rotate>方式，因为代码一直用的是这个方式.
+      设置方式:
+       <animated-rotate xmlns:android="http://schemas.android.com/apk/res/android"
+	       android:drawable="@drawable/progress_bar_icon_white"
+	       android:pivotX="50%"
+	       android:pivotY="50%"/>
+      
+  但是发现这种方式设置后，转动速度有点慢，又加了两个属性:
+      android:framesCount="12"， android:frameDuration="100"
+      
+  而这两个属性不能使用.但是android系统自己就是用的这种方式啊. 上网查了一下，发现两个有用的信息：
+   1 这两个属性是FrameWork自己使用的，不对开发者开放.
+   2 ProgressBar引出的系统资源知识:
+     1 theme.xml:  用于程序员使用某种控件或者布局或者activity的一种风格;
+       <item name="progressBarStyle">@android:style/Widget.ProgressBar</item>，可以通过progressBarStyle信息查到style.xml中的相应信息;
+     2 style.xml:  具体定义了某种控件或者布局等元素的风格样式:
+       <style name="Widget.ProgressBar">
+        <item name="android:indeterminateOnly">true</item>
+        <item name="android:indeterminateDrawable">@android:drawable/progress_medium_white</item>
+        <item name="android:indeterminateBehavior">repeat</item>
+        <item name="android:indeterminateDuration">3500</item>
+        <item name="android:minWidth">48dip</item>
+        <item name="android:maxWidth">48dip</item>
+        <item name="android:minHeight">48dip</item>
+        <item name="android:maxHeight">48dip</item>
+       </style>
+    3 attrs.xml:定义了每种控件所拥有的所有属性; style.xml里定义的属性名会和attrs.xml里定义的属性作比较。
+    4 style.xml里定义的<item name="android:indeterminateDrawable">@android:drawable/progress_medium_white</item>中的progress_medium_white就是具体的animation文件.
+    5 如果以后想看系统是怎么实现元素的，以及元素的资源，就可以到这里来查.
+       
+  
+   从上可知，方法<animated-rotate>不能使用，不对我们开放.
+   
+   那只能使用<rotate/>. 设置如下: 
+      android:indeterminateDrawable="@anim/test_rotation"
+      
+      <rotate xmlns:android="http://schemas.android.com/apk/res/android"
+      android:drawable="@drawable/progress_bar_icon_white"
+      android:pivotX="50%"
+      android:pivotY="50%"
+      android:duration="500"
+      android:fromDegrees="0" android:toDegrees="+360"
+      android:repeatCount="-1"
+      android:interpolator="@android:anim/linear_interpolator"
+     /> 
+   但是<rotate/>又遇到了一个问题,就是每转完一圈，都会顿一下，才会转下一圈.
+   
+   实验在代码里加上: 
+     ProgressBar pb = (ProgressBar)findViewById(R.id.progress_small);
+     Animation a = AnimationUtils.loadAnimation(this, R.anim.test_rotation);  
+     pb.setAnimation(a);
+     
+     也就是手动为progressbar加上animation，就可连续转动了.
+     
+     这时android:indeterminateDrawable可以不用设置为动画，只需要设置为静态图就可.
+     
+     但是如果要敲代码的话，activity有几十个，实现起来太麻烦.
+     
+     最后的实现方式: 写一个类继承自ProgressBar，然后在构造器中加上设置animation的代码. 之后改资源文件(只有一处，其它activity会include这个资源文件)为使用这个派生ProgressBar，就好了.
+     
+     
+     ProgressBar写XML时，如果属性设为wrap_content，那么会根据progressBar的style来设置控件的大小，默认不设的话用得是progressBarStyle->spinner_white_48.png/spinner_white_48.png(hdpi),也就是48dp的图.如果指定宽高，那么就不会使用style设置的大小.
+     
+     
+又遇到问题:
+  1 当View有动画时，即使设了setVisibility(Gone)，这个View也不会被隐藏掉.
+    解决:一开始想在onVisibilityChanged()里判断如果传的是Gone，就canel掉动画; 如果传的是visibility，就start动画.后来发现，onVisibilityChanged()是父layout使用的，所以不代表子View的visible；例如activity在onResume()阶段会掉makeVisibility(Visible),会通知所有子View，但是子View的状态有可能不是Visible.
+    最后的解决方法:在setvisibility()中判断，如果是Visible,那么就start动画，否则就cancel动画.
+ 2 动画没有转一圈时，就cancel动画，回到动画之出，这样会有跳的感觉.
+    解决方法:当想停止的时候，讲动画的循环次数设为1，这样动画就会自动停止.   
+   
+    

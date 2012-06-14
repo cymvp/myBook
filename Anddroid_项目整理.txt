@@ -1,0 +1,22 @@
+ListView下拉刷新:
+  1 FrameLayout方式:
+    继承一个FrameLayout, 重写onLayout()等方法，然后将ListView和TextView放入其中.
+    下拉的方式: 动态调整ListView和TextView的坐标.
+     一开始将TextView放到FrameLayout之外，将ListView放在FremeLayout的0起始.
+     MAX_LENGTH是人为定的，定的是TextView的高度.当下拉超过这个值，就会变为"释放以刷新".
+     
+     其他实现方式:
+      使用marginTop：先将TextView摆在0起始，再将ListView放在TextView的下面，也就是偏移等于减去TextView的高度.然后设置两个子View的marginTop,这个marginTop要等于TextView的高度，否则:如果小于TextView的高度，则TextView会有一部分露在外面;如果大于TextView的高度，则ListView的上面会有一部分藏在里面.
+      使用padding:和上面相似.
+      
+ 2 使用LinearLayout方式:
+    继承一个LinearLayout,重写onLayout()方法，然后将ListView和TextView放入其中.
+    下拉的方式:使用LinearLayout中子View的MarginTop进行调整.
+     特殊的地方:一开始我调整的是LinearLayout的MarginTop，也就是LinearLayout相对于其父类，手机屏幕的maring,这样如果LinearLayout上面还有兄弟View时，就会覆盖住兄弟View.所以要在LinearLayout中有一个子View，然后改子View相对于LinearLayout做maringTop.也就是说：子View无论如何移动，都不会超出父View显示，而会覆盖住兄弟View的显示.
+     
+     一开始将LinearLayout的子View:mContent的marginTop设置为TextView的高度.然后后面对这个marginTop做改变就好，类似于FrameLayout方式中提到的marginTop的方式.
+     mContent里放的就是ListView和TextView.
+     
+     这种方式不用去人为估算MAX_LENGTH，在onLayout()中可以得到TextView的高度，然后设置. 其实FrameLayout中也可以这么设置MAX_LENGTH.
+     
+  上面的两种方式，都是最外围layout不动，然后移动里面的子View，只是方法1用了直接摆位置的方式，方式2使用了子View设置marginTop的方式.     

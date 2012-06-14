@@ -1,0 +1,16 @@
+sudo nautilus
+
+sudo update-alternatives --install /user/bin/java java  ~/Java/jdk1.5.0_22 255
+
+ sudo update-alternatives --install /user/bin/java java /home/yali/Java/jdk1.5.0_22 255
+ 
+ 
+ 
+ 
+ sudo dpkg -i gcc-4.3_4.3.4-10ubuntu1_i386.deb 
+
+sudo repo init -u https://android.googlesource.com/platform/manifest -b froyo
+
+ sudo ~/repo init -u https://android.googlesource.com/platform/manifest -b froyo
+
+sudo apt-get install git-core curl

@@ -1,0 +1,93 @@
+
+5.2 
+Equals()方法:
+  public boolean equals(Object otherObject);
+  
+  Object的equals方法比较的是两个对象是否具有相同的引用. 对于String之类的类来说，主要的用途是比较内容，所以String类会覆盖该方法.
+  
+  相等的概念应该满足对称性，自反性，传递性等性质，所以如果在equals()中使用了instanceof(当前类名)来判断对象的继承性，而这个equals()有在父类和子类间进行比较，那么就会违反自反性.
+  
+  当类的继承体系可以有一个统一的相等评判标准时，就可以使用instanceof(基类名)来判断；如果某个子类有自己的评判标准，那么使用getClass()来单纯比较该子类.
+  
+  注意equals()的参数是Object,如果写为其他类，那么只是重定义了一个新方法,并没有覆盖Ojbect的方法.
+  SE5.0后，@Override可以对覆盖方法进行标记，如果用了该标记，但是并没有覆盖方法，那么就会报错.
+  
+  
+   
+对象的equals()与hashCode的定义必需兼容，如果a.equals(b)为true，那么a.hashCode()必需等于b.hashCode().
+
+public interface Iterable<E>
+{
+    Iterator<E> iterator();                      
+}
+
+public interface Iterator<E>
+{
+    E next();
+    boolean hasNext();
+    void remove();
+}
+
+public interface Collection<E>
+{   
+    boolean add(E element);
+    Iterator<E> iterator();
+}
+
+Collection继承了Iterable接口, Iterable接口指定实现的类必需提供一个: 返回一个实现Iterator接口的类对象的方法.
+
+it.rmove()必须与it.next()一起使用.
+
+13.2 
+
+对于有序的集合，通过Iterator添加元素才有意义，对于无序的集合，只通过集合的方法添加元素即可.
+
+LinkedList实现了ListIterator子接口，用于使用Iterator来操作数据（添加，遍历）.
+
+ListIterator的Add方法将数据添加到当前某数据前.
+
+当hasNext()返回false,说明到了末尾，这是可以添加数据到末尾.
+
+add方法只依赖于Iterator的位置，而remove依赖于Iterator的状态(之前调的是next还是previous).
+
+
+ListIterator还有set方法，可直接修改它前面的元素.
+
+LinkedList.get()内部还是一个遍历的过程.
+
+ListIterator保持着当前位置的计数.
+
+13.2.2 ArrayList
+
+对象的equals()与hashCode的定义必需兼容，如果a.equals(b)为true，那么a.hashCode()必需等于b.hashCode().
+
+Object的equals方法比较的是两个对象是否具有相同的引用. 对于String之类的类来说，比较内容是比较重要的，所以String类会覆盖该方法.
+
+
+Collection --->List
+                   --->LinkedList
+                   --->ArrayList
+                   --->Vector
+           --->Set
+                 
+Map           
+   --->Hashtable
+   --->HashMap
+   --->WeakHashMap
+   
+   
+
+Set:散列表,好处是遍历元素较快，删除元素也不会影响其他的已有元素. 缺点是不能知道每个元素的确切位置。
+
+    
+   
+
+Map：映射表, 可以通过键来访问. 树映射表会对元素进行排序.散列映射表的存储方式还是散列集，只不过是使用键来代替原本的对象HashCode.
+
+     每个键值只能对应一个元素值.
+
+
+
+
+
+        

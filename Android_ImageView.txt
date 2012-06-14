@@ -1,0 +1,47 @@
+android:scaleType的值 :
+
+ 1 fitCenter：这个是默认值. 把图片按比例扩大/缩小到View的宽度，然后居中显示。图片会按照宽度为基础缩放到View的大小，图片如果比View大，那么会显示一部分，不会失真.
+ 
+ 2 fitEnd:和上面相似，只是顶着View的下面显示.
+ 
+ 3 fitStart:和上面相似，只是顶着View的上面显示.
+ 
+ 4 fitXY: 也会根据图片是否比View大还是小来进行缩放，但是不会按比例缩放. 如果图片比view大，会完全显示图片，但是会失真.
+ 
+ 5 center: 按图片的原始大小显示.如果图片大于View,那么会截取图片的中间部分等同于View的大小显示.
+ 
+ 6 centerCrop:按比例扩大图片的size居中显示，使得图片长 (宽)等于或大于View的长(宽).我的理解是: 图片显示时长和宽一定不能别View小,所以哪个边比View的边小的更多，按哪个边来放大. 
+ 
+ 7 centerInside:类似上面的centerCrop，但是相反，哪个边比View的边大的更多，按哪个边缩小.
+ 
+ centerInside: 按比例，完整显示，所以如果图片比view小，那么维持图片大小不变显示。如果图片比View大，那么会按更大的那一边(其实是和View的比例较大的那边)缩小图片以适应View，达到完整显示图片. 由于不会放大图片，所以图片不会变虚。
+ 
+ centerCrop：按比例，占满，所以当图片比View大，那么按较小的那边(其实是和View的比例较小的那边)缩小图片以适应View，达到占满; 如果图片比view小，那么按图片较小的那边（其实是和View的比例较小的那边）放大图片到该边等于View的边，以达到占满。    
+ 
+ 占满就是拿比例差最大的那边来靠； 完整显示就是拿比例差最小的那边来靠.
+ 
+ 当图片比View小, centerInside等于center; 当图片比View大， centerInside等于fitCenter。
+ 
+ 失真的(特指会形变)：fitXY
+ 可填满View的: fitXY, centerCrop
+ 不做缩放的:center
+ 可居中的:fitCenter, center.
+ 
+ 
+ 按比例的话,占满和完整显示不能共存.
+ 
+ android:background这个属性会作为layout或者ImageView的内容大小参与wrap_content的计算，也就是说android:background会撑大该控件或者该布局.
+ 
+ 
+ ImageView设置Resource的规则:
+ 
+ 刚开始初始化的时候，只会调setImageDrawable()，而不会调setImageResource(),所以mResource = 0， 而mDrawable为xml里设置的图片信息.
+ 
+ 调用setImageResource()时，会设置mResource，而mDrawable通过resolveUri()进行设置. 
+   只有传入的sourceid和mResource不等时，才会设置有效，否则直接返回. 就是说一开始就传入0,那么设置无效(因为mResource的初始值就是0)，还是会显示正确的mDrawable里的图片.
+   
+ 当一个图片依靠mResource来显示时，比如调 setImageResource(有效值)，那么再调一次setImageResource(0)，才会使图片显示不出来（传0会跳过mResource相等的判断，然后将mDrawable破坏）.
+ 
+ 程序中会优先判断是否mDRawable为null.
+ 
+

@@ -1,0 +1,7 @@
+重载: 尽量不要定义两个参数数目相同的重载方法，在一定条件下会导致这样的问题:
+  
+    A, B extends A, C extends A;
+    x.classify(A); x.classify(B);
+    A a = new B();
+    x.classify(A);会调用x.classify(A);
+    因为重载是在编译期去选择方法的. 

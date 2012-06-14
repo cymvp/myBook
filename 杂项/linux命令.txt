@@ -1,0 +1,37 @@
+sudo nautilus
+
+指令分为: shellscript, shell内建指令，别名。
+
+指令的搜索顺序: 1 以路径来执行命令;2 别名； 3 内建指令；通过Path来搜索指令
+
+"\"是跳脱字符
+
+${}是可以先计算花括号里面的结果。
+
+变量赋值: sss=23即可。
+
+变为环境变量: export PATH
+取消变量：unset PATH,这个可以取消环境变量
+
+env和export都可以列出环境变量。set可以列出环境变量和自定义变量。
+
+环境变量转为自定义变量: declare +x 变量名
+
+Login Shell会读取/etc/profile->~/.bash_profile->~/.bashrc
+
+No Login Shell仅会读取~/.bashrc
+
+定义变量时, 为test="abc", =号不能有空格.
+
+cp命令的目的文件的所有者是执行cp命令的人
+	-p 会复制时间
+	-d 复制链接属性,默认是复制被链接的文件本身
+	
+使用sudo执行的指令，执行者是root.	
+
+which命令是根据PATH查找可执行文件;所以1 Bash内建指令； 2 非可执行文件；都找不到。
+
+hard link: 实际上是在该链接所在的目录的block中，增加一个指针和一个文件名，指向被链接文件。由于没有真正增加inode，所以没有真正增加任何文件。
+
+symblic link: 在该链接所在的目录，新增加一个文件，也就是新增加一个inode，作为这个链接文件，并使这个链接文件引用被链接文件。
+

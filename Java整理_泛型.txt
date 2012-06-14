@@ -1,0 +1,144 @@
+T成为类型变量.
+
+定义一个泛型类:
+
+public class Pair<T>{
+
+  public static <T> T getMiddle(T[] a){
+  }
+
+}
+
+调用泛型方法:
+  ArrayAlg.<String>getMiddle(new String[3]);
+  
+有时需要对类型变量做限制，以可以限制传给类型变量T的类型，比如传入的类型需要实现Comparable接口,以可以调用compareTo()方法.
+
+  public static <T extends Comparable> T getMiddle(T[] a);
+  public static <T extends Comparable&Serializable> T getMiddle(T[] a);
+  
+  限定的类型可以是类，也可以试接口，但最多只能有一个类,且这个类名需要放到最前面.
+  
+类型擦除过程:
+  去掉<>，并用第一个限定的类型取代类型变量T.如果没有限定的类型，则用Object取代.  
+  
+  
+  ？ extends Employee 的意思是，本引用存放的数据类型是Employee子类的任意一种，所以你赋给我什么子类型，都有可能会出现CastClass错误.
+所以? extends Employee <-- Employee, 也就是将Employee及子类型赋给? extends Employee不允许.
+
+  ? super Manager的意思是， 本引用存放的数据类型是Manager的父类的任意一种,所以我赋给什么父类型，都有可能会出现CastClass错误，除非给最父类Object.
+所以? super Manager ---> Manager/ Employee， 不允许.
+
+  编译器主要是考虑到如果允许上述规则，就有可能会在运行时出现CastClass错误，所以在编译阶段禁止掉.
+  
+Java普通方法的重载，不会看返回值.
+
+但是Java泛型方法，会查看返回值来判断使用哪个方法.
+
+   public  static <T> int  func(){
+       return 1;
+   }
+   
+   public static <T> double  func1(){
+       return 1.1;
+   }
+   
+   1. TestNormal.func();
+   2. int d = TestNormal.func();
+   3. double  d = TestNormal.func();  
+   
+   1和2会产生同样结果, 3调用的是double的方法.
+   
+Java覆盖方法时，如果返回的是对象，则要求子类覆盖方法的返回类型必须父类相应方法返回类型的子类或者原父类(叫协变).
+   如果子类的方法和父类的方法同参数，只是返回值不同，又不是上面的那种协变类型，那么会报错(要试验一下C++).   
+   
+   
+   
+   1 Java的泛型方法也可以实参演绎，且同样是类型精确一致.
+
+2 Java的泛型方法的类型变量（也就是模板参数）可以通过加入限制的方式来避免C++模板由于模板实参传入的不能满足要求而导致的实例化时的编译错误.
+  如:某个泛型方法要求传入的模板实参必须实现Comparable接口和Serializable接口: public static <T extends Comparable & Serializable> T min(T[] a);
+  
+  Java的泛型类也可以加限制.
+
+double是简单类型，Double是类.
+
+泛型中，不能使用简单类型作为类型参数，原因是擦除后，会用Object代替类型参数.
+
+Java虚拟机只能看到普通类，而看不到泛型类; Java虚拟机可以通过返回值的类型来判断相应的调用函数.
+
+Class本身是泛型类.可以Class<T>.
+
+Java虚拟机在解释泛型类时，会擦除类型参数，用Object代替，同时所有的相同名称的泛型类都成为一个普通类.
+
+所以，对于一个类型参数，它是什么类型是Java编译器关心的，而Java虚拟机只关心在程序运行时，E的引用真正指向了什么类型.
+
+
+class Test<E>
+{
+	private Object[] element;	/* 定义为Object[]或者E[]都无所谓，只要里面的引用元素，存放的确实是E的对象即可. */
+	//private E[] element;          /* Both are OK. */
+	
+	public Test()
+	{
+		element = new Object[10];
+                /* 如果定义为private E[] element; */
+                // element = (E[])new Object[10];  /* 骗过Java编译器; 在Java虚拟机端会用Object代替E，所以（E[]）这个转换对Java虚拟机无效.
+	}
+	public E get(int n)
+	{
+		return (E)element[n];  /* 骗过Java编译器. */
+                /* 如果定义为private E[] element; */
+                return element[n];
+	}
+	public void set(E e, int n)
+	{
+		element[n] = e;
+                /* 如果定义为private E[] element; */
+                element[n] = e;
+	}
+}
+
+泛型中，不能使用 new E(), new E[], E.class这样的表达式.所以需要: 1 内部一律创为Object的引用数组; 2使用反射机制创建E的对象.
+
+ 
+Pair<? extends Employee>定义了一个类，该类的类型参数是"? extends Employee".这种类型参数无法实例化，所以可以阻止更改器的调用.
+
+Pair<Employee>和Pair<Manager>都是Pair<? extends Employee>的子类.
+
+
+
+Pair<?, extends Employee>: 自Employee及以下,所有的Pair<Employee>, Pair<Manager>都是Pair<?, extends Employee>的子类.
+但是?, extends Employee并不是个确定的类型，它是Employee及以下的子类的集合.
+
+同理: 
+Pair<?, super Employee>: 自Employee及以上,所有的Pair<Employee>, Pair<Object>都是Pair<?, super Employee>的子类.
+但是?, super Employee 并不是个确定的类型，它是Employee及以上的父类的集合.
+
+
+
+interface interface1<E>
+{
+	
+}
+
+interface interface2
+{
+	
+}
+
+
+class class1<E> implements interface1<E>, interface2  /* 泛型类能继承，实现泛型类和泛型接口, 非泛型类和非泛型接口 */
+{
+	
+}
+
+非泛型类只能继承，实现非泛型类和非泛型接口.
+
+
+接口只能扩展(extends)接口，不能实现(implements)接口;多个接口间用“，”分隔:
+
+interface interface3<E> extends interface1<E>, interface2
+{
+	
+}

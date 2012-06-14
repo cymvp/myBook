@@ -1,0 +1,15 @@
+android:sharedUserId="android.uid.system"
+  android:sharedUserId的意思是: 只要多个apk包的uid相同且apk的签名证书一致，就可以将这些apk包配置到同一个进程中。且这些apk自己的文件可以共享。
+  android.uid.system的意思是，这个apk可以拥有system的uid.如果能够拥有系统的签名：platform，那么就可以获得system权限，即uid为system.
+  system uid 为1000
+  我知道的系统uid和普通uid不同的有: 
+  	addService():只有root和system的uid才可以做。
+  	system的uid不能访问sdCard.
+  	
+  一般不同手机厂商的手机，都改过了platform等签名证书，所以一般情况下，即使设置了android:sharedUserId="android.uid.system"，也无法成功安装成功，因为证书拿不到。
+  testkey证书：一般默认的签名使用；不同于debug的证书签名，debug的证书是eclipse提供的。
+  一般发布的应用程序，都是用keytools生成证书，然后保留好私钥。
+  
+  问题1： 相同uid的apk配置到一个进程中，会不会导致程序间的影响? 应该会的.
+  问题2： uid为system,还会不会区分system不同的uid? 不会,system的uid就是一个，1000.
+  

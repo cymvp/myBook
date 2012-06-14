@@ -1,0 +1,35 @@
+PopupWindow的原理是：
+  1 PopupWindow设了背景的话，会用PopupViewContainer包在外面，这是一个FrameLayout的子类，该类对Touch进行了处理，所以可以接受任意Touch退出的功能.
+  2 PopupWindow的内部实现是一个窗口，将PopupViewContainer或者用户设置的View通过mWindowManager.addView(mPopupView, p);注册给系统.因为PopupWindow是一个子窗口，所以gravity是相对于该窗口的父窗口的布局，x,y也是相对于父窗口的偏移坐标. 父窗口一般为Activity的mDecor，由于activity创建的是应用窗口，所以mDecor的token为mWindowToken.
+  
+  3 "窗口"这个概念以后就是指: 向WindowManager注册的一套数据结构，包括View, ViewRoot, Params. 
+  
+  4 ViewRoot的重要数据:  存储于WindowManagerImpl中的mRoots[];
+      mView: 指向和ViewRoot对应的View。
+      mAttachInfo：存放token等等.
+      mWindow: new W(this, context); 用于标识一个窗口，因为一个窗口对应一个ViewRoot，一个ViewRoot对应一个mWindow.
+      
+  5 AttachInfo的重要数据:
+      mRootView: 等于ViewRoot的mView;
+      mWindow: 等于ViewRoot的mWindow对象.
+      mWindowToken: 等于 mWindow..asBinder();这个用于标识一个窗口，每个窗口的这个变量都标识自己.
+      mWindowLeft等: 这几个成员用于标识这个窗口在父窗口(还是屏幕?)中的坐标.
+      mPanelParentWindowToken：如果这个是子窗口，那么这个成员记录了父窗口的Token值;如果父窗口也是子窗口,那么等于父窗口的mPanelParentWindowToken，这个同样记录了它的父窗口的Token；如果父窗口不是子窗口，那么返回父窗口的mWindowToken.
+      
+      IBinder token = v.getWindowToken(); /* 由上可知，这里获得的是一个根窗口. */
+      params.token = token;
+      如果一个窗口是子窗口，那么从addview()的查找它的父窗口的规则来看，找到的一定是一个params.token代表的窗口的父窗口.这就说明，子窗口一定不能再有子窗口，根窗口才能有子窗口.
+      
+  6 当PopupWindow显示出来后，这时旋转屏幕，会先绘制PopupWindow，再绘制后面的Activity的View，因为PopupWindow绘制时，用的仍是旧的Activity的View的坐标，所以对不齐.解决方法是: 重写PopupWindow依附的那个View的类，并重写onDraw()方法，当绘制到该view时，在onDraw()方法中重新show PopupWindow，就可以实现PopupWindow显示在正确位置.  
+         
+      根窗口特征: 1 Params.token为HistoryRecord; 2 AttachInfo.mPanelParentWindowToken为null.
+      
+      如果创建的窗口, 类型为子窗口，但是token为null,那么调wm.addView(popup, params);时，PhoneWindow的peekDecorView会返回自己的mDecor,然后将decor.getWindowToken()作为WindowManager.LayoutParams的token值;也就是使用activity的ViewRoot对应的mWindowToken作为待创建的子窗口的检测token值。后面会用这个值到所有窗口中去比对，找到对应的后将其作为待创建子窗口的父窗口.
+      
+      
+  7 对key的处理:
+    PopupWindow重写了dispatchKeyEvent()，所以可以自己处理key event；
+    如果不重写，那么ViewGroup的dispatchKeyEvent()会做mPrivateFlags & FOCUSED 的判断，这就要求ViewGroup设置: setFocusableInTouchMode()以设置FOCUSABLE_IN_TOUCH_MODE然后设置requestFocus()以设置FOCUSED.
+    所以需要：                
+                popup.setFocusableInTouchMode(true);
+                popup.requestFocus();

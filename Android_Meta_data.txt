@@ -1,0 +1,28 @@
+<meta-data />是一个组件的额外数据，可以包含在:<activity> <activity-alias> <service> <receiver>四个元素中.
+
+<meta-data />可以包含android:name, android:resource, android:name.
+
+android:resource: 资源的ID.
+android：value:资源ID对应的值.
+
+<meta-data />的数据会存储在PackageItemInfo.metaData中, ActivityInfo继承自PackageItemInfo,所以如果想读取Activity的Meta-data,可以:
+
+ActivityInfo ai = activity.getPackageManager().getActivityInfo(componentName, PackageManager.GET_META_DATA);   
+
+
+java.lang.Object 
+   ->android.content.pm.PackageItemInfo 
+     ->android.content.pm.ComponentInfo 
+       -> android.content.pm.ActivityInfo 
+       
+       
+Bundle:
+ 其实就是一个Map表，key为String.
+ 
+ 将数据存入Intent时，可以直接调用Intent的putExtra()，将键值对传入.内部应该是将这对数据存入Intent的Bundle. 也可以调用Bundle的putString(),putInt()等方法直接存入Bundle,在调Intent的putExtras()将Bundle对象传入.
+ 
+ 从Intent读取数据时，只能先调用Intent的getExtras方法得到Bundle对象，然后调用Bundle的getInt(),getString()等方法得到对应的值.
+       
+    
+
+
