@@ -1,0 +1,3 @@
+Region.Op.DIFFERENCE: 找两次clip不重叠的部份，然后第一次clip的不重叠画新东西，第二次clip的不重叠的部份不画东西，重叠部份保留旧东西。
+
+Region.Op.XOR: 找两次clip不重叠的部份，然后第一次clip的不重叠部份和第二次clip不重叠的部份画新东西，重叠部份保留旧东西。
