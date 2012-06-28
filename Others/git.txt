@@ -148,4 +148,12 @@ git checkout  Branch
 	 
 	 git pull --rebase = git fetch + git rebase
 	 git pull 远程仓库名 要拉的branch名字
+	
+	6.29: Repo
+	1 curl 下载下来的repo只是一个引导脚本。
+        2 使用repo init -u 清单库的git地址 可以在当前目录生成一个.repo的folder,这个目录存放的就是repo真正运行时需要的东西.
+	3 repo引导脚本预定义了从哪里下载repo.git: REPO_URL=xxxx; 如果不想从默认网址下载，那么可以在repo init时使用: repo init --repo-url来覆盖默认地址.
+        4 清单库文件为.repo/manifest.xml，里面记录了该repo总括的所有版本库信息，比如UBC等等。Google的Repo的功能就是想统一对这些版本库进行管理。
+        5 为.repo/manifest.xml中，<remote>记录了远端版本库的名字，地址，Gerrit的地址; <default>字段记录了默认branch, branch所在版本库，sync-j。<project>字段记录了每个项目版本库库的信息，其中name字段可以在repo sync时使用来单独sync某个项目: repo sync name.
+        6 repo init -b可以指定特定的分支.这样同步的时候实际上就是同步-b指定的分支. 应该就是上面<default>记录的revision.
 	   	

@@ -1,0 +1,11 @@
+1 unix的文本文件以LF(0x0A, /n, ^M)结尾，而dos，windows的文本文件以CRLF(0x0D 0x0A, /r/n, ^M$)结尾。
+2 一般vim不会显示dos格式文件的^M字符，需要vim -b filename来显示.
+3 vim中: set list显示不可见字符; set ff? 显示当前文件格式; set ff=dos， set ff=unix 设置文件格式.
+4 eclipse中，通过Workspace 页面 , 在里面的 New text file line delimiter可以设置文件格式. 默认的意思是:eclipse实际会看当前文件的格式，然后之后编辑文件都会沿用之前的格式.
+5 Araxis Merger工具:经过试验，发现和eclipse类似，都会延续之前的格式.
+
+6 在eclipse的ctrl+shift+f时，会格式化，会消掉所有多余的空格。如果想消掉开头多余的空格，可以用:^ +\n替换为\n来做. 取消句子后面多余的空格: +\n替换为\n.
+
+  正则表达式的.不匹配回车符.
+
+7 在Linux shell中需要打两个\\.才能使用将.转意为普通字符的原因: linux shell认为一个\的意思是换行，所以\\一起才是正则表达式的\.

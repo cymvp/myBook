@@ -10,14 +10,20 @@ ${}是可以先计算花括号里面的结果。
 
 变量赋值: sss=23即可。
 
-变为环境变量: export PATH
+变为环境变量: export PATH 或者declare -x 变量名
 取消变量：unset PATH,这个可以取消环境变量
 
 env和export都可以列出环境变量。set可以列出环境变量和自定义变量。
 
+declare -i 声明为整形| -a 声明为数组 | -r 声明为只读
+
+bash最多只能声明为整形，不能为浮点型; 且默认为字符串型. 
+
 环境变量转为自定义变量: declare +x 变量名
 
 Login Shell会读取/etc/profile->~/.bash_profile->~/.bashrc
+
+我的Unbuntu系统里有: etc/profile, ~/.profile这两个.
 
 No Login Shell仅会读取~/.bashrc
 
@@ -35,3 +41,15 @@ hard link: 实际上是在该链接所在的目录的block中，增加一个指针和一个文件名，指向被
 
 symblic link: 在该链接所在的目录，新增加一个文件，也就是新增加一个inode，作为这个链接文件，并使这个链接文件引用被链接文件。
 
+2002.06.29:
+Shell:
+~/.bash_history存放的是shell命令的历史,但是只有shell注销后才会保存在这里.
+type -at ls: 显示所有ls命令，-t为显示命令类型: shell还是file.
+""之间的内容, 特殊符号可以保留特殊性.
+bash:进入到子命令.
+`命令` == $(命令), 命令为shell命令
+${变量} == $"变量"
+
+source命令和.命令都是动态载入环境配置文件.
+bash命令行支持的是通配符，通配符: *代表0到任意多个任意字符，?代表肯定一个任意字符;没有"."这个通配符.
+grep命令支持的是正则表达式.
