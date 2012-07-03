@@ -1,0 +1,151 @@
+git reset HEAD file.txt: 就是将文件从暂存区移除, 该文件之前在哪个区,就回到哪个区; 比如文件之前在untracked区,就仍然变为是untracked的；如果文件之前在修改区，就仍然变为是已修改但为暂存的。
+
+可以理解为：文件已经修改，那么放到工作目录；如果文件作了暂存，就进入暂存区，物理位置是git目录中的某个地方；如果文件作了提交，那么就会放到git目录中。文件已经进入跟踪，但是没有修改的，实际上还是属于以提交的文件，实际会放在git目录。
+
+
+git branch: 列出当前本地仓库的所有branch.
+
+git checkout branch名: 切换branch.
+
+
+git checkout -b 新branch名: 创建并切换分支.
+
+git checkout -b 新branch名 [远程名]/[分支名].
+
+git remote 远程仓库
+
+git remote -v，可以列出远程仓库地址。
+
+git commit --amend 可以多次提交用一个commit.
+
+git commit -C commitId: 使用指定commitId的信息进行提交，与git commit --amend不同的是:1可以指定任意CommitId. 两者都会产生一个新的CommitId.
+git commit --amend，后面不接 -m "字符串", 则不会改变提交说明.
+git commit --allow-emtpy -m "提交说明" 生成空提交; 见<< git权威指南 >>13.2章
+
+git rebase -i HEAD~2 修改HEAD到HEAD~1， HEAD~2,三个Commit的提交说明.
+
+HEAD~1: HEAD上一个父Commit.
+HEAD^2: HEAD的第二个父Commit.
+master@{2}: reflog上第三个记录. 
+
+git reflog -1: 查看一个reflog.
+
+
+git的理解:
+ .git就对应一个数据仓库。
+ git pull时必须要在一个本地branch下，然后从远端数据仓库的一个branch上拿数据。
+ 远端给的地址比如用git remote -v看到的，都是数据仓库的地址。branch的地址是不知道的。
+ 如果想用git pull拿一个分支的数据，用git pull "git://地址" 的方式，如果没有设置默认remote branch，就不能成功。
+ 而如果当前本地branch做了远端branch的跟踪，就可以用git pull来下载数据。
+ 
+ 默认远端分支名: master, 默认远端仓库名：origin
+ 
+ git remote show “数据仓库名”， 这条语句是查看该远程数据仓库都有哪些分支。与git branch -r相似.
+
+git branch -d hotfix
+
+~/bin/repo sync baidu/packages/apps/UBC就可恢复某个有.git仓库的目录文件.
+哪些目录有.git，有代码根目录的.repo/mainfest.xml来指定。
+
+ git config --global --add alias.ci commit用来改名.
+ git的配置文件在~/.gitconfig文件中。
+ 
+ 
+ 疑问:
+  1 如果删除掉真个目录，在repo sync,那么之前的本地分支还有么
+  2 gitk看到的有别的本地分支commit的纪录么?
+  
+ 	git rm files: 查找暂存区，找到文件，如果该文件既没有在工作区被修改(删除不算)，也没有在暂存区被修改，那么就会将这个文件从工作区删除(如果在工作区有的话)，并更新到暂存区(也就是将删除状态更新到暂存区).
+	
+	git add -u: 将被版本库跟踪的所有文件,只要有改动的,包括删除操作,全都更新到暂存区中. 所以不包括没有跟踪的文件.
+	 
+  	git ls-files 查看暂存区的文件.
+	git ls-tree -l Id Id可以是tree对象或者是commit对象. 根据Id显示目录树.
+	
+	git cat-file -t Id： 获得Id对应的对象的类型.
+	
+	git cat-file -p Id: 获得Id对应的对象的详细信息.
+	
+	git write-tree:将残存区的文件写入对象库,并生成tree对象。 之后提交时，这个tree对象就是对应commit对象的目录树.
+	
+	git add 命令实际上是将文件写入到对象库，这样会生成一个Id, 然后暂存区的目录树会引用这个Id，也就指向Id对应的文件。
+	
+	暂存区其实始终就是一个目录树(Index), 当git commit时，会生成一个commitId对应的commit对象，并将暂存区的目录树写入对象库，然后commit对象引用这个目录树.
+	
+	commit对象->tree对象->文件对象.
+	
+	git diff commitId: 比较工作区和commitId的版本库的区别.
+	git diff：比较工作区和暂存区的区别.
+	git diff --cached 比较暂存区和HEAD版本库的区别.
+	
+	git checkout commit-id: 这时HEAD就处于游离状态。游离状态的HEAD不指向任何分支。在游离状态下，使用git reset (--soft) commitID，都不会改到任何分支的指针，而
+	只会改动到HEAD指针.当HEAD使用git checkout master命令时，HEAD指针重新指回master分支，再做操作的时候，HEAD指针就会和master指针一起变动.
+	
+	git reset --hard 
+	-------------------------------------------                   
+	|工作区           暂存区         版本库指针|
+	-------------------------------------------
+	
+	git reset 
+	-------------------------------------------
+	工作区          | 暂存区         版本库指针|
+	-------------------------------------------
+	
+	git reset --soft
+	-------------------------------------------
+	工作区           暂存区        |版本库指针|
+	-------------------------------------------
+	
+	git checkout  --fileName
+	-------------------------------------------
+	|工作区|           暂存区         版本库指针
+	-------------------------------------------
+	
+	git checkout  commitID
+	-------------------------------------------
+	|工作区           暂存区|         版本库指针
+	-------------------------------------------
+	-------------------------------------------
+                   |HEAD指针|
+	-------------------------------------------
+	
+	
+git checkout  Branch
+	-------------------------------------------
+	|工作区           暂存区|         版本库指针
+	-------------------------------------------
+	-------------------------------------------
+                   |HEAD指针|
+	------------------------------------------
+
+	git checkout branch时发生冲突的条件:
+ 	  设当前branch为b1, 要切换的目标branch为b2; 若文件f1在b1中有改动，无论是工作区的改动还是暂存区的改动; 而f1在b1的版本库中和在b2的版本库中不相同，那么就会提示切换branch失败。	
+	
+	git push: 
+	  git push remote库名字
+	  	这种命令方式在以下几种情况下有效:1 本当前branch跟踪了远端的某个分支; 2 当前branch的名字和远端的某个分支名字相同.
+	  	
+	 git push remote库名字 远端branch名字
+	    这种命令方式所指定的远端branch名字优先级最高,就是push到该名字所代表的分支上. 如果分支不存在，则失败. 是将和远端分支同名的本地分支Push到远端分支，而不是从
+	    当前的本地分支.
+	    
+	 git push remote库名字 本地分支名:远端分支名
+	    这种命令会在远端库中创建一个分支，如果远端分支名代表的branch不存在的话.
+	    
+	 git remote add 远端库的别名 远端库的url. 
+	    远端库的别名是本地指定的，也就是可以不是远端库真正的名字.
+	    
+	 git ls-remote 远端库名字： 这个指令可以查看远端库的branch有哪些. 这个命令是通过网络实时获得.        
+	 
+	 
+	 git remote add remote库的别名 url, 这个命令只是将远端库加入到本地，但是不会pull任何远端库的东西.
+	 
+	 git push , git pull, git fetch, git ls-remote什么时候后面可以不加remote仓库名?
+	 	跟踪的remote仓库和remote branch都是由.git/config中指定的.
+	 
+	 如果本地的工作区或者暂存区不干净的时候,且和远端的版本库有可能会冲突的时候,这时用git pull remoteGit 远端branch;的话就会提示"最好stash本地的修改或者提交本地的修改"
+	 之类.
+	 
+	 git pull --rebase = git fetch + git rebase
+	 git pull 远程仓库名 要拉的branch名字
+	   	

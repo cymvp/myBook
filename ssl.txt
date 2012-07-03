@@ -1,0 +1,4 @@
+1 Client发送ClientHello时会带有随机数;Server回复ServerHello时也会带一个随机数.这两个随机数和pre master secret共同产生master secret.
+2 pre master secret的作用主要是使master secret的随机性更明显，以防止不好的随机算法使master secret被猜出来.
+3 master secret的作用: 用于防止"密码回滚攻击",就是攻击者通过修改握手的初始会话使C/S被迫使用加密最不安全的算法.这个是ssl新加的内容，方法就是在握手的最后阶段对整个
+握手流程作MAC哈希校验,使用的key就是master secret.最后master secret用于生成session key，这个session key就是最后数据传输时使用的secret。
