@@ -1,0 +1,8 @@
+  这两天发现UBC被Setting调用的activity，进去就会crash；今天看ActionBar时，发现当设置为<uses-sdk android:minSdkVersion="10" />，系统就不会使用ActionBar,而设为version >=11时,才会
+显示ActionBar.
+  这说明，Android会使用minSdkVersion指定的版本运行所有API, 用这样的方式达到兼容性,而并不是达到API内部实现的兼容(就是API接口一致，而内部的实现按新的方式).
+  由此我想到，是不是因为我为UBC设置的是<uses-sdk android:minSdkVersion="10" />，导致Android系统不会为UBC加载Switcher类呢？将minSdkVersion改到14试了一下，果然就可以了。
+  但是为什么通过Android.mk方式使用mm编译的apk包就没这个问题，我还是不清楚。
+  总结就是:如果以后程序会用到新版本API的feature，那么最好在minSDKVersion定义为相应的版本.但是我发现kaixin的程序minSDKVersion为5，而会在程序里判断是否为2.3.3以上以使用NFC功能。
+  难道是对于API的升级会一律使用最低版本来运行，而其他新的功能按实际Android的系统版本来运行?
+  

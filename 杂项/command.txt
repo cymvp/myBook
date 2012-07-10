@@ -1,0 +1,39 @@
+machine 172.22.1.83
+login cuiyang
+password 123
+
+curl http://10.32.37.53:8088/public/repo > ./bin/repo
+
+sudo chmod a+x ./bin/repo
+
+./bin/repo init --repo-url=http://git.scm.baidu.com:8088/git/repo.git -u http://git.scm.baidu.com:8088/git/manifest.git -b yi_2.1.0
+
+./bin/repo sync -j8
+
+git branch -a
+
+
+
+/* start network */
+sudo service network-manager stop
+sudo rm /var/lib/NetworkManager/NetworkManager.state
+sudo service network-manager start
+
+
+/* Build Source */
+
+. ./build/envsetup.sh
+
+print_lunch_menu
+
+
+/* FrameWork lib 的位置 */
+/home/wenqing/桌面/Link to wenqing/far2/out/target/common/obj/JAVA_LIBRARIES
+
+
+{1,2,3}
+
+
+chown cuiyang -R . 嵌套修改当前目录的的owner为cuiiyang.
+
+

@@ -79,3 +79,68 @@
     解决方法:当想停止的时候，讲动画的循环次数设为1，这样动画就会自动停止.   
    
     
+    
+2012.07.10:
+  1 使用style的方法: style="@android:style/Animation.Toast" 
+     style是xml中的关键字，相当于android:layout_width等属性的用法;   
+     @android:style, 如果是yi平台自己定义的style,可以使用@yi:style.
+     /Animation.Toast是styles.xml中定义的元素; 而如果是@android:drawable/progress_medium_white则是drawable目录下的 progress_medium_white文件. 推断:如果存在@android
+     :XXX文件，那么跟着“/”后面的就是XXX文件里定义的元素；如果没有XXX文件，那么XXX就当作目录处理，后面跟的就是目录里的文件.
+     
+     attrs.xml里定义了<style name="Theme">,也就是其实theme.xml里面的item，在attr.xml里面已经都定义了.
+     我于是认为是这么个关系: attr.xml为theme.xml提供了每个item的定义，theme.xml为每个item提供了值，而值又是由style.xml来真正决定的。attr.xml又为style.xml的每个item
+     提供了定义.
+     
+     默认会使用Theme这个，而Theme.XXX继承自Theme，会在Theme的基础上作修改.
+     "@?android:attr/xxx", xxx必须为Theme的某个item。
+  2 android:targetSdkVersion,如果不设置，默认为minSdkVersion.
+  
+  3 (1)app在manifest.xml中使用的android:theme="@style/MyTheme"，就是这个app真正使用的theme.
+      目的: 为了让app能够配置自己想要的theme.
+      
+    (2)如果app没有设置android:theme，那么会根据android:targetSdkVersion来判断app想使用哪种theme:
+    	values less than 11, @android:style/Theme; 
+    	between 11 and 13 @android:style/Theme.Holo; 
+    	and for 14 and higher @android:style/Theme.DeviceDefault.
+      目的: 为了能让app兼容最低版本api的UI风格.
+      
+    (3)上面(2)的app不能做到和各个版本的兼容，所以为了解决这个问题，android允许为设备不同的api版本配置不同的theme.
+       方法就是:
+        如果要在api为11上支持Holo的theme，那么新建一个res/values-v11/themes.xml:
+				<resources>    
+					<style name="MyTheme" parent="@android:style/Theme.Holo">        
+					<!-- Any customizations for your app running on devices with Theme.Holo here -->    
+					</style>
+			  </resources>
+			  然后在manifest.xml中声明:android:theme="@style/MyTheme">
+			  
+			  也可以新建一个res/values-v11/styles.xml: 
+			  <resources>
+					<style 
+						name="Theme.Chainfire.NoTitleBar"
+       			parent="android:Theme.Holo.NoActionBar">
+   				</style>
+				</resources>
+				
+				同理，也可以为api 14建立values-v14/themes.xml.
+		4 说明: 目前Android分为3套theme，black(api 11以前), holo(api 11-13), device_default(api 14).
+		        Android为了能让app写一套code，就可以在不同的api版本的设备上和其它界面风格统一,想出来device_default这种方式出来；意思就是定义
+		        一个统一文件及名称，设备厂商想换theme，直接改这个文件就好，然后app在manifest.xml中直接android:theme="@android:style/Theme.DeviceDefault"，就可以
+		    直接引用到themes_device_defaults.xml这个文件定义的theme。
+		    
+		5 想引用theme的某个属性，可以使用如下方法:
+			<MyWidget android:layout_width="wrap_content"    
+				android:layout_height="wrap_content"    
+				myapp:pressedHighlightColor="?android:attr/colorPressedHighlight" />
+				但是colorPressedHighlight必须是当前theme拥有的属性。否则会编译不过.
+	  6 android:theme， 使用于manifest.xml中定义application或者activity的theme.
+	    android:attr，用于引用当前theme的属性.
+	    andrlid:style，用于使用系统样式为android:theme赋值，或者为view的style赋值.
+	    android:Theme:为styles.xml定义： parent="android:Theme.Holo.NoActionBar"(其实应该为android:之  Theme.XXXX)
+	    
+	    @android:style/后面可以接styles.xml定义的item，也可以接theme.xml定义的内容，又因为这两个文件定义的都是<style name="XXX"/>,所以我的推断是,
+	    @android:style/XXX 代表查找定义了的<style name="XXX"/>,而不管是在哪个文件中定义的.
+	    
+	    			    
+
+   
