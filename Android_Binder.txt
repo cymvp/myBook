@@ -1,0 +1,52 @@
+1 ITest::asInterface(android.os.IBinder obj)
+  obj的类型为: BpBinder或者BBinder.
+  asInterface()会调用到obj.getLocalInterface()(这个是IBinder的接口方法):
+    (1) 当obj为BpBinder(Java层的BinderProxy对象，在Binder.java中定义), 那么会返回BpTest类对象(Java层的Stub.proxy);因为BpBinder没有重写IBinder::getLocalInterface(),而默认的会返回null,
+    asInterface()就会intr = new Bp##INTERFACE(obj);
+    (2) 当obj为BBinder(Java层的Itest.stub.子类对象)，说明为同一进程，返回的就是这个原对象.因为BBinder重写了IBinder::getLocalInterface(),所以asInterface()会直接返回BBinder.
+    BBinder == Binder.java,          BnTest == Stub
+    BpBinder == BinderProxy.java,  , BpTest == Stub.proxy.
+    
+  至于如何给asInterface传递IBinder对象，这是Binder内部的实现，如调用ServiceManager.getService("sdf"); Binder内部会根据Client和Service是否在同一进程，决定返回一个
+  BBinder对象还是BpBinder对象.
+  
+2  Java层的asInterface()方法放到了stub类中，而C++放在了ITest类中,我想这是由于interface不能定义方法造成的吧. stub extends ITest. 
+   所以在Java层编写stub或者XXXNative类时，都要记得编写asInterface()方法，因为这个方法既不属于IXXXTest/IInterface类，也不属于Binder/IBinder类.
+   stub和某些实现类的XXXNative类是同等的.
+
+3 IInterface.h: asInterface(); BpInterface; BnInterface; BnInterface::queryLocalInterface{return this / return null;}
+  IBinder.h: IBinder.
+  Binder.h:  BBinder
+  Binder.cpp: IBinder;BBinder; IBinder::queryLocalInterface{return null;}
+  BpBinder.h: BpBinder
+  BpBinder.cpp: BpBinder
+  
+4 BpBinder和BBinder是一个级别的，都是继承自IBinder类.
+
+5 获得某个Binder对象对应的真正要操作对象的例子: IPackageManager.Stub.asInterface(ServiceManager.getService("package"));
+  ServiceManager.getService("package")会获得"package"这个Service的BpBinder对象或者BBinder对象；然后调用IPackageManager.Stub.asInterface()就可以获得这个Service的
+  真正实例.  
+  
+  
+  2012.07.21
+  
+  1 一个BBinder(Binder类)对象的创建，就会创建一个线程; BpBinder(BinderProxy类)对象不会创建线程;
+  2 我猜想，BBinder对象和BpBinder对象的转换，是在Parcel::readStrongBinder()方法中；在这个方法中，判断如果如果读的对象不属于本进程，那么就会转换为一个BpBinder对象;
+  否则转化为一个BBinder对象.
+  3 在一个IBinder对象上调用方法，如果这个对象是BBinder,那么直接调用实际的方法；如果这个对象是BpBinder,那么会调用transact()->Binder驱动层->BBinder的实际方法.
+  4 Binder是一个单工模式，消息只能由Bpinder主动向BBinder发送。
+  
+  5 一个应用程序默认有两个BBinder类对象，一个是ApplicationThread对象，这个对象用于和ActivityManagerService实现交互; 一个是W对象，这个对象用于和WMS交互.
+    App如果想和AMS交互，就要得到AMS授予的BpBinder(AMS只是将BBinder对象传给Binder驱动，Binder会转化为BpBinder对象给App)，这个BpBinder实际上就是ActivityRecord(4.0
+    之前叫做HistoryRecord).
+    而AMS如果要和App交互，就要得到App授予的BpBinder对象，这个对象就是ApplicationThread类对象；这个对象的传递过程:
+      (1) Activity::main()->ActivityThread::attach()
+      (2) IActivityManager mgr = ActivityManagerNative.getDefault(); mgr.attachApplication(mAppThread);
+          也就是先通过ServiceManager得到AMS的stub.proxy(ActivityManagerProxy)和BpBinder()(BinderProxy)，然后通过ActivityManagerProxy::attachApplication(mAppThread)
+          将ApplicationThread类对象mAppThread传给AMs，这样之后AMS就可以通过mAppThread的转换形式ApplicationThreadProxy和BpBinder(BinderProxy)来和App通信了.
+          App  (ActivityRecord)-----> AMS.
+          App  <-------------(ApplicationThread) AMS.
+           
+  
+  
+    

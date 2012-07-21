@@ -141,6 +141,19 @@
 	    @android:style/后面可以接styles.xml定义的item，也可以接theme.xml定义的内容，又因为这两个文件定义的都是<style name="XXX"/>,所以我的推断是,
 	    @android:style/XXX 代表查找定义了的<style name="XXX"/>,而不管是在哪个文件中定义的.
 	    
+2012.07.11:	 
+
+     public Button(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+    }
+    其中defStyle为com.android.internal.R.attr.buttonStyle，是个定值，在android FrameWork编译好后就定下来了.
+    
+    android的theme和style也是采用覆盖原则，子style覆盖父style，开发者设置的style覆盖default的style。
+    之所以写上面这些，是我发现在android api 14上的button，一直高度是72px, 查了发现Widget.Holo.Button设置了<item name="android:minHeight">48dip</item>.
+    及时我为Button设置了style="@android:style/Widget.Button",发现也改变不了Button的高度。开始我以为是一直会加载Widget.Holo.Button而不会加载我设置的style，后来
+    想想，应该是先加载了默认的com.android.internal.R.attr.buttonStyle,然后用我设置的style去覆盖相应属性；但是由于我设置的style没有设置android:minHeight，所以会使用
+    默认的minHeight.  
+	    
 	    			    
 
    

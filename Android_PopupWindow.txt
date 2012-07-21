@@ -24,7 +24,7 @@ PopupWindow的原理是：
          
       根窗口特征: 1 Params.token为HistoryRecord; 2 AttachInfo.mPanelParentWindowToken为null.
       
-      如果创建的窗口, 类型为子窗口，但是token为null,那么调wm.addView(popup, params);时，PhoneWindow的peekDecorView会返回自己的mDecor,然后将decor.getWindowToken()作为WindowManager.LayoutParams的token值;也就是使用activity的ViewRoot对应的mWindowToken作为待创建的子窗口的检测token值。后面会用这个值到所有窗口中去比对，找到对应的后将其作为待创建子窗口的父窗口.
+      如果创建的窗口, 类型为子窗口，但是Params.token为null,那么调wm.addView(popup, params);时，PhoneWindow的peekDecorView会返回自己的mDecor,然后将decor.getWindowToken()作为WindowManager.LayoutParams的token值;也就是使用activity的ViewRoot对应的mWindowToken作为待创建的子窗口的检测token值。后面会用这个值到所有窗口中去比对，找到对应的后将其作为待创建子窗口的父窗口.
       
       
   7 对key的处理:
@@ -33,3 +33,20 @@ PopupWindow的原理是：
     所以需要：                
                 popup.setFocusableInTouchMode(true);
                 popup.requestFocus();
+                
+   2012.07.13:00:23
+   
+   8补充: 
+     IBinder token = v.getWindowToken();
+     params.type = WindowManager.LayoutParams.TYPE_APPLICATION; //TYPE_APPLICATION
+     params.token = token;
+     上面语句会出错，因为TYPE_APPLICATION是根窗口，所以params.token必须为空(或者为HistoryRecord?待验证)，否则会出错。因为根窗口不能依附于任何窗口.
+     上面创出的根窗口是相对于屏幕的位置.
+     HistoryRecord == Activity::mToken == Windows类::mAppToken
+     
+     IBinder token = v.getWindowToken();
+     params.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL; //TYPE_APPLICATION
+     //params.token = token;
+     TYPE_APPLICATION_PANEL类型是子窗口类型，所以依附于token指定的窗口。params.token也可以为null，这样PhoneWindow的peekDecorView会返回自己的mDecor,上面已经讲过.
+     这样创出的窗口是相对于父窗口的位置.
+     v.getWindowToken是得到和ViewRoot对应的Window的token。               

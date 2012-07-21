@@ -11,3 +11,21 @@
 
 6 精确控制子View宽高的方法(即根据父View的大小设置子View的宽高): 自定义父ViewGroup和子View,在父ViewGroup的onMeasure()中，先替换掉getChildMeasureSpec()，父ViewGroup的值代替子View的值传给子View的measure()方法，这样子View
 等于就知道了父ViewGroup的大小；也可以先调用 setMeasuredDimension()设置父ViewGroup的大小，然后就可以在子View中通过getParent().getWidth()拿到父ViewGroup的大小了。
+
+
+7 有几种pupup: PopupMenu, PopupWindow, PopupListWindow, Spinner.PopupDialog, Spinner.DropdownPopup
+  Android4.0实现的Spinner使用了两种popup, Spinner.PopupDialog和Spinner.DropdownPopup。
+  
+  PopupListWindow和PopupMenu是Android4.0新加的；其中PopupListWindow封装了PopupWindow，且改进了它.
+  
+  在转屏时，如果oncreate()不会重新调用，那么Spinner.DropdownPopup也会出现位置变歪的情况.但是popupMenu就不会。
+  
+  在转屏时, 如果让onCreate()重新调用，那么应该在onDestroy()中disMiss()掉popupXXX，因为系统在重新创建Activity时，发现有窗口没有关闭，就会抛异常.
+  
+  Android4.0对禁止转屏重创onCreate()设置了新方法: android:configChanges="keyboardHidden|orientation|screenSize">
+  
+  在设计UE时，应该在转屏时不重新调onCreate()，因为用户的输入信息不能丢掉；而不重新调onCreate()，就需要考虑popupMenu()在转屏后的位置是否还正常;如果不正常，有两种解决方法:
+    1 转屏时在onConfigurationChanged中先关掉popupMenu(),再手动打开popupXXX;
+    2 在popupXXX所吸附的anchor的onDraw()中，打开popupXXX.
+  
+  
